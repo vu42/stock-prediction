@@ -70,7 +70,10 @@ KAFKA_CONFIG = {
     'consumer_group': 'stock-prediction-consumer-group',
     'polling_interval': 10,  # Poll API every 10 seconds for streaming simulation
     'batch_size': 100,
-    'max_poll_records': 500
+    'max_poll_records': 500,
+    # Topic configuration
+    'num_partitions': 6,  # 6 partitions for parallel processing
+    'replication_factor': 1  # 1 replica (single broker setup)
 }
 
 # ============================================================================

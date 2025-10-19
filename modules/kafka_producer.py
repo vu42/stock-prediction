@@ -46,7 +46,9 @@ class StockPriceProducer:
             key_serializer=lambda k: k.encode('utf-8') if k else None,
             acks='all',
             retries=3,
-            max_in_flight_requests_per_connection=1
+            max_in_flight_requests_per_connection=5,
+            # Partitioning strategy: use stock_symbol as key for even distribution
+            partitioner=lambda key, all_partitions, available: hash(key) % len(all_partitions)
         )
         
         # Initialize simulator for simulated mode

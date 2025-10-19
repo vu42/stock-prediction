@@ -70,6 +70,17 @@ psql -U postgres -d stock_prediction -c "SELECT stock_symbol, COUNT(*) FROM stoc
 1. Open http://localhost:8080
 2. Navigate to Topics → `vn30-stock-prices`
 3. Show messages flowing (30 ticks/sec)
+4. **Check Partitions**: Should see 6 partitions with distributed data
+
+#### Show Partitions (Terminal):
+```bash
+./check_kafka_partitions.sh
+```
+
+**Expected output:**
+- 6 partitions (Partition 0-5)
+- Messages distributed across partitions
+- Each stock routed to specific partition (by hash)
 
 #### Show Database (Prove transformation works!):
 ```bash
@@ -203,6 +214,8 @@ DELETE FROM crawl_metadata;
 
 ### STREAMING:
 - ✅ Kafka architecture for real-time data
+- ✅ **6 partitions** for parallel processing & scalability
+- ✅ **Hash-based partitioning** (stock symbol → partition)
 - ✅ Tick aggregation (intraday → daily OHLCV)
 - ✅ Simulated for fast demo (30 ticks/sec)
 - ✅ Production-ready transformation logic
@@ -237,12 +250,14 @@ DELETE FROM crawl_metadata;
 ## 🛠️ SCRIPTS SUMMARY
 
 ```
-start_database.sh          # Setup PostgreSQL (once)
-start_streaming_demo.sh    # Start streaming demo
-stop_streaming_demo.sh     # Stop streaming demo
-start_batch_demo.sh        # Start batch demo
-stop_batch_demo.sh         # Stop batch demo
-cleanup_database.sh        # Clean DB between demos
+start_database.sh             # Setup PostgreSQL (once)
+setup_kafka_topic.py          # Setup Kafka topic with partitions
+check_kafka_partitions.sh     # Check partition distribution
+start_streaming_demo.sh       # Start streaming demo
+stop_streaming_demo.sh        # Stop streaming demo
+start_batch_demo.sh           # Start batch demo
+stop_batch_demo.sh            # Stop batch demo
+cleanup_database.sh           # Clean DB between demos
 ```
 
 ---

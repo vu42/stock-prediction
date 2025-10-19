@@ -68,7 +68,14 @@ sleep 30
 echo -e "${GREEN}✓ Kafka infrastructure ready${NC}"
 
 echo ""
-print_header "STEP 2: Initialize Database Schema"
+print_header "STEP 2: Setup Kafka Topic with Partitions"
+
+echo -e "${BLUE}Creating topic 'vn30-stock-prices' with 6 partitions...${NC}"
+python3 setup_kafka_topic.py
+echo -e "${GREEN}✓ Kafka topic configured${NC}"
+
+echo ""
+print_header "STEP 3: Initialize Database Schema"
 
 python3 << 'PYEOF'
 from modules.database import init_database
@@ -78,7 +85,7 @@ print("✓ Database initialized")
 PYEOF
 
 echo ""
-print_header "STEP 3: Starting Kafka Producer & Consumer"
+print_header "STEP 4: Starting Kafka Producer & Consumer"
 
 # Create logs directory
 mkdir -p logs
@@ -98,7 +105,7 @@ echo "$CONSUMER_PID" > logs/streaming_consumer.pid
 echo -e "${GREEN}✓ Consumer started (PID: $CONSUMER_PID)${NC}"
 
 echo ""
-print_header "STEP 4: Starting Airflow"
+print_header "STEP 5: Starting Airflow"
 
 # Stop any existing Airflow
 echo -e "${BLUE}Stopping any existing Airflow...${NC}"
@@ -130,7 +137,7 @@ echo -e "${YELLOW}Waiting for Airflow to initialize (15 seconds)...${NC}"
 sleep 15
 
 echo ""
-print_header "STEP 5: Opening UIs in Browser"
+print_header "STEP 6: Opening UIs in Browser"
 
 # Open Kafka UI
 echo -e "${GREEN}✓ Opening Kafka UI...${NC}"
