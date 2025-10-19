@@ -10,7 +10,9 @@ import sys
 import os
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = '/Users/aphan/Learning/stock_data/stock-prediction'
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 import pendulum
 from datetime import timedelta
@@ -61,10 +63,12 @@ with DAG(
     dag_id='vn30_model_training',
     default_args=default_args,
     description=f'LSTM model training and prediction for {len(STOCK_SYMBOLS)} VN30 stocks',
-    schedule_interval='0 18 * * *',
+    # Production schedule: Daily at 6:00 PM Vietnam Time (after data crawler at 5:00 PM)
+    # schedule_interval='0 18 * * *',  # Uncomment for production
+    schedule_interval=None,  # Manual trigger for demo
     start_date=pendulum.datetime(2025, 10, 1, tz=local_tz),
     catchup=False,
-    tags=['vn30', 'ml', 'lstm', 'training', 'prediction'],
+    tags=['vn30', 'ml', 'lstm', 'training', 'prediction', 'batch'],
     max_active_runs=1,
 ) as dag:
     

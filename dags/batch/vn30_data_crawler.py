@@ -10,7 +10,9 @@ import sys
 import os
 
 # Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+PROJECT_ROOT = '/Users/aphan/Learning/stock_data/stock-prediction'
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 import pendulum
 from datetime import timedelta
@@ -56,10 +58,12 @@ with DAG(
     dag_id='vn30_data_crawler',
     default_args=default_args,
     description=f'Incremental data crawler for {len(STOCK_SYMBOLS)} VN30 stocks from VNDirect API',
-    schedule_interval='0 17 * * *',
+    # Production schedule: Daily at 5:00 PM Vietnam Time (UTC+7)
+    # schedule_interval='0 17 * * *',  # Uncomment for production
+    schedule_interval=None,  # Manual trigger for demo
     start_date=pendulum.datetime(2025, 10, 1, tz=local_tz),
     catchup=False,
-    tags=['vn30', 'data-crawler', 'incremental', 'postgres'],
+    tags=['vn30', 'data-crawler', 'incremental', 'postgres', 'batch'],
     max_active_runs=1,
 ) as dag:
     
