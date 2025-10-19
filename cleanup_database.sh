@@ -7,6 +7,9 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Set PostgreSQL path for Homebrew (keg-only formula)
+export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"
+
 echo -e "${YELLOW}╔═══════════════════════════════════════════════════════╗${NC}"
 echo -e "${YELLOW}║         CLEANING DATABASE FOR NEXT DEMO               ║${NC}"
 echo -e "${YELLOW}╚═══════════════════════════════════════════════════════╝${NC}"

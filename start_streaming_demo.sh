@@ -15,6 +15,9 @@ print_header() {
 
 print_header "FULL DEMO STREAMING - Kafka + Airflow + Database"
 
+# Set PostgreSQL path for Homebrew (keg-only formula)
+export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"
+
 # Check prerequisites
 echo -e "${BLUE}Checking prerequisites...${NC}"
 
@@ -41,8 +44,22 @@ if ! command -v python3 &> /dev/null; then
 fi
 echo -e "${GREEN}✓ Python3 installed${NC}"
 
-# Check Airflow
+# Check and activate Airflow venv
 export AIRFLOW_HOME=~/airflow
+VENV_DIR="$HOME/.airflow-venv"
+
+if [ -d "$VENV_DIR" ]; then
+    echo -e "${BLUE}Activating Airflow environment...${NC}"
+    source "$VENV_DIR/bin/activate"
+    export PATH="$VENV_DIR/bin:$PATH"
+    echo -e "${GREEN}✓ Airflow environment activated${NC}"
+else
+    echo -e "${RED}✗ Airflow not installed!${NC}"
+    echo "Run: ./install_airflow.sh"
+    exit 1
+fi
+
+# Check Airflow
 if [ ! -d "$AIRFLOW_HOME" ]; then
     echo -e "${YELLOW}⚠ Airflow not initialized${NC}"
     echo "Initializing Airflow..."
