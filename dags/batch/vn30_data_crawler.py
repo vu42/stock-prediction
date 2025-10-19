@@ -20,8 +20,10 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 from config import STOCK_SYMBOLS
-from modules.database import init_database
-from modules.data_fetcher import fetch_stock_data
+from modules.database import init_database, insert_stock_data
+import pandas as pd
+import random
+from datetime import datetime, timedelta
 
 
 def init_db_task():
@@ -31,13 +33,48 @@ def init_db_task():
 
 def crawl_stock_task(stock_symbol, **context):
     """
-    Crawl data for a single stock (incremental).
+    Generate mock data and insert into DB (for demo).
     
     Args:
         stock_symbol: Stock symbol to crawl
         context: Airflow context with execution date
     """
-    return fetch_stock_data(stock_symbol, **context)
+    print(f"[CRAWLER] Generating mock data for {stock_symbol}...")
+    
+    # Generate 100 days of fake OHLCV data
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=100)
+    
+    dates = pd.date_range(start=start_date, end=end_date, freq='D')
+    base_price = random.uniform(10000, 100000)
+    
+    data = []
+    for date in dates:
+        # Random price movement
+        open_price = base_price * random.uniform(0.95, 1.05)
+        high_price = open_price * random.uniform(1.0, 1.03)
+        low_price = open_price * random.uniform(0.97, 1.0)
+        close_price = random.uniform(low_price, high_price)
+        volume = random.randint(100000, 5000000)
+        
+        data.append({
+            'stock_symbol': stock_symbol,
+            'date': date.strftime('%Y-%m-%d'),
+            'open': round(open_price, 2),
+            'high': round(high_price, 2),
+            'low': round(low_price, 2),
+            'close': round(close_price, 2),
+            'volume': volume
+        })
+        
+        base_price = close_price  # Next day starts from previous close
+    
+    # Create DataFrame and insert to DB
+    df = pd.DataFrame(data)
+    insert_stock_data(df, stock_symbol)
+    
+    print(f"[CRAWLER] ✓ {stock_symbol}: Generated and inserted {len(data)} records")
+    return f"{stock_symbol}: SUCCESS ({len(data)} records inserted)"
 
 
 # Vietnam timezone

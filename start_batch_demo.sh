@@ -98,7 +98,7 @@ echo -e "${GREEN}✓ Scheduler started (PID: $SCHEDULER_PID)${NC}"
 
 # Start Airflow Webserver (background)
 echo -e "${BLUE}Starting Airflow Webserver...${NC}"
-nohup airflow webserver -p 8080 > logs/batch_webserver_$(date +%Y%m%d_%H%M%S).log 2>&1 &
+nohup airflow webserver -p 8081 > logs/batch_webserver_$(date +%Y%m%d_%H%M%S).log 2>&1 &
 WEBSERVER_PID=$!
 echo "$WEBSERVER_PID" > logs/batch_webserver.pid
 echo -e "${GREEN}✓ Webserver started (PID: $WEBSERVER_PID)${NC}"
