@@ -15,6 +15,9 @@ print_header() {
 
 print_header "START DATABASE - PostgreSQL Setup + Start"
 
+# Set PostgreSQL path for Homebrew (keg-only formula)
+export PATH="/opt/homebrew/opt/postgresql@15/bin:$PATH"
+
 # Check if PostgreSQL is installed
 if ! command -v psql &> /dev/null; then
     echo -e "${YELLOW}PostgreSQL not installed. Installing via Homebrew...${NC}"
@@ -36,7 +39,7 @@ else
 fi
 
 # Check if service is running
-if pg_isready -q; then
+if pg_isready -q 2>/dev/null; then
     echo -e "${GREEN}✓ PostgreSQL already running${NC}"
 else
     echo -e "${BLUE}Starting PostgreSQL service...${NC}"
@@ -45,16 +48,18 @@ else
     # Wait for it to be ready
     echo -e "${YELLOW}Waiting for PostgreSQL to start...${NC}"
     for i in {1..10}; do
-        if pg_isready -q; then
+        if pg_isready -q 2>/dev/null; then
             echo -e "${GREEN}✓ PostgreSQL started successfully${NC}"
             break
         fi
         sleep 1
     done
     
-    if ! pg_isready -q; then
+    if ! pg_isready -q 2>/dev/null; then
         echo -e "${RED}✗ PostgreSQL failed to start${NC}"
-        exit 1
+        echo -e "${YELLOW}Trying to start manually...${NC}"
+        brew services restart postgresql@15
+        sleep 5
     fi
 fi
 
