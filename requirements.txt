@@ -21,5 +21,11 @@ sendgrid==6.10.0
 psycopg2-binary==2.9.9
 SQLAlchemy==2.0.23
 
+# Kafka (Real-time Streaming)
+kafka-python==2.0.2
+
+# Technical Analysis
+ta==0.11.0
+
 # SSL handling (built-in with Python)
 

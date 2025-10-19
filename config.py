@@ -62,6 +62,35 @@ EMAIL_CONFIG = {
 }
 
 # ============================================================================
+# KAFKA CONFIGURATION
+# ============================================================================
+KAFKA_CONFIG = {
+    'bootstrap_servers': ['localhost:9092'],
+    'topic_name': 'vn30-stock-prices',
+    'consumer_group': 'stock-prediction-consumer-group',
+    'polling_interval': 10,  # Poll API every 10 seconds for streaming simulation
+    'batch_size': 100,
+    'max_poll_records': 500
+}
+
+# ============================================================================
+# STREAMING MODE CONFIGURATION
+# ============================================================================
+# Mode: 'simulated' or 'real'
+# - simulated: Generate fake ticks (1 tick/second) for demo - NO API CALLS
+# - real: Call VNDirect API (every 10s) - returns same data (not real-time)
+STREAMING_MODE = 'simulated'  # Change to 'real' to use actual API
+
+# Simulated streaming settings
+SIMULATED_STREAMING = {
+    'tick_interval': 1.0,       # Generate tick every 1 second
+    'volatility': 0.005,        # 0.5% price volatility per tick
+    'drift': 0.0001,            # 0.01% upward bias per tick
+    'min_volume': 1000,         # Minimum trade volume
+    'max_volume': 100000,       # Maximum trade volume
+}
+
+# ============================================================================
 # AIRFLOW SCHEDULE
 # ============================================================================
 SCHEDULE_TIME = '0 17 * * *'  # 5:00 PM daily (Vietnam time)

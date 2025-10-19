@@ -1,111 +1,137 @@
 # VN30 Stock Price Prediction System
 
-A production-ready machine learning system for predicting stock prices of Vietnam's top 30 blue-chip companies (VN30) using LSTM neural networks and Apache Airflow for workflow orchestration.
+Production-ready machine learning system for predicting stock prices of Vietnam's top 30 blue-chip companies (VN30) using LSTM neural networks.
 
-## Table of Contents
+**Two Independent Workflows:**
+- **BATCH**: Daily scheduled processing with Airflow (production)
+- **STREAMING**: Real-time Kafka pipeline (demo/architecture showcase)
 
-- [Overview](#overview)
-- [System Architecture](#system-architecture)
-- [Features](#features)
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [Usage](#usage)
-- [Project Structure](#project-structure)
-- [Database Schema](#database-schema)
-- [DAG Workflows](#dag-workflows)
-- [API Reference](#api-reference)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
+---
 
-## Overview
+## 🚀 Quick Start
 
-This system provides automated stock price prediction for VN30 stocks using deep learning. It features incremental data crawling from VNDirect API, LSTM-based price forecasting, and comprehensive reporting through email notifications.
-
-**Key Capabilities:**
-- Incremental data collection (avoids duplicate data)
-- LSTM neural network training (100 epochs)
-- 30-day future price predictions
-- Model performance evaluation with RMSE/MAE metrics
-- Automated daily updates via Airflow
-- PostgreSQL for reliable data storage
-
-## System Architecture
-
+### ONE-TIME SETUP (Required First!)
+```bash
+./start_database.sh
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Apache Airflow                              │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                   │
-│  DAG 1: Data Crawler (5:00 PM Daily)                            │
-│  └─> Fetch incremental data from VNDirect API                   │
-│      └─> Store in PostgreSQL (UPSERT)                           │
-│                                                                   │
-│  DAG 2: Model Training (6:00 PM Daily)                          │
-│  └─> Load data from PostgreSQL                                  │
-│      └─> Train/Update LSTM models (30 stocks)                   │
-│          └─> Evaluate & Predict future prices                   │
-│              └─> Send email report                              │
-│                                                                   │
-└─────────────────────────────────────────────────────────────────┘
-           │                                      │
-           ▼                                      ▼
-    ┌─────────────┐                        ┌──────────────┐
-    │ PostgreSQL  │                        │    Output    │
-    │  Database   │                        │   Files      │
-    │             │                        │  (models,    │
-    │ - stock_    │                        │   charts,    │
-    │   prices    │                        │   CSVs)      │
-    │ - crawl_    │                        └──────────────┘
-    │   metadata  │
-    └─────────────┘
+This installs PostgreSQL, creates database & tables. **Do this once only!**
+
+### STREAMING Demo (Kafka - 5 min)
+```bash
+./start_streaming_demo.sh    # Start
+# ... demo ...
+./stop_streaming_demo.sh      # Stop
+./cleanup_database.sh         # Clean for next demo
 ```
 
-## Features
-
-### Data Collection
-- **Incremental Crawling**: Only fetches new data since last update
-- **Automatic Deduplication**: PostgreSQL UNIQUE constraint prevents duplicates
-- **VNDirect API Integration**: Reliable data source for Vietnamese stocks
-- **Metadata Tracking**: Monitors last crawl date and record counts
-
-### Machine Learning
-- **LSTM Architecture**: 4-layer LSTM network with dropout
-- **100 Epochs Training**: Ensures model accuracy
-- **Sequence Length**: 60 days lookback window
-- **Future Predictions**: 30-day ahead forecasting
-- **Model Persistence**: Saves trained models for reuse
-
-### Evaluation & Reporting
-- **Performance Metrics**: RMSE and MAE calculation
-- **Visualization**: Comparison charts (actual vs predicted)
-- **Email Reports**: Automated summary emails with attachments
-- **CSV Exports**: Prediction results in CSV format
-
-## Requirements
-
-### System Requirements
-- Python 3.8+
-- PostgreSQL 12+
-- 8GB RAM minimum (16GB recommended for training)
-- 10GB disk space for models and data
-
-### Python Dependencies
-```
-apache-airflow==2.7.3
-pendulum==2.1.2
-pandas==2.0.3
-numpy==1.24.3
-tensorflow==2.13.0
-keras==2.13.1
-scikit-learn==1.3.0
-matplotlib==3.7.2
-psycopg2-binary==2.9.9
-SQLAlchemy==2.0.23
-sendgrid==6.10.0
+### BATCH Demo (Real API - 10 min)
+```bash
+./start_batch_demo.sh         # Start
+# ... demo ...
+./stop_batch_demo.sh          # Stop
 ```
 
-## Installation
+See [WORKFLOW.md](WORKFLOW.md) for detailed step-by-step guide.
+
+---
+
+## 📊 System Architecture
+
+### BATCH Processing (Production)
+```
+Airflow DAG (5:00 PM Daily)
+    ↓
+VNDirect API (incremental crawl)
+    ↓
+PostgreSQL
+    ↓
+Airflow DAG (5:30 PM Daily)
+    ↓
+LSTM Training (100 epochs, 20+ features)
+    ↓
+Predictions + Email Reports
+```
+
+**Features:**
+- Real API calls with incremental crawling
+- Multi-feature LSTM (Bidirectional + BatchNorm)
+- 30-day predictions with evaluation metrics
+- Automated email notifications
+
+### STREAMING (Demo/Architecture)
+```
+Simulated Generator (30 ticks/sec)
+    ↓
+Kafka Producer
+    ↓
+Kafka Broker
+    ↓
+Kafka Consumer + TickAggregator
+    ↓
+PostgreSQL (daily OHLCV)
+    ↓
+Airflow Orchestrator (every 30 min)
+```
+
+**Features:**
+- Simulated real-time ticks (no API calls)
+- Kafka message queue architecture
+- Tick aggregation (intraday → daily OHLCV)
+- Mock ML pipeline for quick demos
+
+---
+
+## 📂 Project Structure
+
+```
+stock-prediction/
+├── README.md                       # This file
+├── WORKFLOW.md                     # Demo workflow guide
+├── requirements.txt               # Python dependencies
+├── docker-compose.yml             # Kafka + PostgreSQL infrastructure
+├── config.py                      # Configuration settings
+│
+├── start_database.sh              # ONE-TIME: Setup PostgreSQL + tables
+├── start_streaming_demo.sh        # Start streaming demo
+├── stop_streaming_demo.sh         # Stop streaming demo
+├── start_batch_demo.sh            # Start batch demo
+├── stop_batch_demo.sh             # Stop batch demo
+├── cleanup_database.sh            # Clean database between demos
+│
+├── dags/
+│   ├── batch/
+│   │   ├── vn30_data_crawler.py          # Daily data crawling (5:00 PM)
+│   │   └── vn30_model_training.py        # Daily model training (5:30 PM)
+│   │
+│   └── streaming/
+│       ├── kafka_health_monitor.py       # Health monitoring (every 5 min)
+│       ├── vn30_streaming_orchestrator.py # ML orchestrator (every 30 min)
+│       └── vn30_kafka_streaming.py       # Demo DAGs (manual trigger)
+│
+├── modules/
+│   ├── database.py                # PostgreSQL operations
+│   ├── data_fetcher.py            # API data collection (batch)
+│   ├── model_trainer.py           # LSTM training & prediction
+│   ├── orchestrator.py            # Workflow coordination
+│   ├── email_notifier.py          # Email reporting
+│   ├── kafka_producer.py          # Kafka producer (streaming)
+│   ├── kafka_consumer.py          # Kafka consumer (streaming)
+│   ├── tick_aggregator.py         # Tick → OHLCV aggregation
+│   ├── simulated_data_generator.py # Fake data generator
+│   └── streaming_utils.py         # Kafka + Airflow utilities
+│
+└── output/                        # Generated files (gitignored)
+    └── {STOCK_SYMBOL}/
+        ├── {STOCK}_model.h5              # Trained LSTM model
+        ├── {STOCK}_scaler.pkl            # Data scaler
+        ├── {STOCK}_evaluation.png        # Performance chart
+        ├── {STOCK}_future.png            # Prediction chart
+        └── {STOCK}_future_predictions.csv # Predictions
+```
+
+---
+
+## 🔧 Installation
 
 ### 1. Clone Repository
 ```bash
@@ -118,57 +144,110 @@ cd stock-prediction
 pip install -r requirements.txt
 ```
 
-### 3. Setup PostgreSQL
-
-**Option A: Using Docker (Recommended)**
+### 3. Setup Airflow
 ```bash
-docker run -d \
-  --name stock-postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=stock_prediction \
-  -p 5432:5432 \
-  postgres:15
-```
-
-**Option B: Local Installation**
-```bash
-# macOS
-brew install postgresql@15
-brew services start postgresql@15
-createdb stock_prediction
-
-# Ubuntu/Debian
-sudo apt-get install postgresql
-sudo -u postgres createdb stock_prediction
-```
-
-### 4. Initialize Database
-Database tables will be created automatically on first run by the init_database task in the DAG.
-
-### 5. Configure Airflow
-```bash
-# Initialize Airflow database
+export AIRFLOW_HOME=~/airflow
 airflow db init
-
-# Create admin user
 airflow users create \
     --username admin \
+    --password admin \
     --firstname Admin \
     --lastname User \
     --role Admin \
-    --email admin@example.com \
-    --password admin
+    --email admin@example.com
 
-# Copy DAGs to Airflow folder
+# Copy DAGs
 cp -r dags/* ~/airflow/dags/
 ```
 
-## Configuration
+---
 
-Edit `config.py` to customize settings:
+## 🎯 Usage
+
+### BATCH Flow (Production)
+
+**Start:**
+```bash
+./batch_demo.sh
+```
+
+**Start Airflow:**
+```bash
+# Terminal 1
+export AIRFLOW_HOME=~/airflow
+airflow scheduler
+
+# Terminal 2
+export AIRFLOW_HOME=~/airflow
+airflow webserver -p 8080
+```
+
+**Access:** http://localhost:8080 (admin/admin)
+
+**Enable DAGs:**
+- `vn30_data_crawler` (5:00 PM daily)
+- `vn30_model_training` (5:30 PM daily)
+
+**Stop:**
+```bash
+./batch_stop.sh
+# Ctrl+C in Airflow terminals
+```
+
+---
+
+### STREAMING Flow (Demo)
+
+**Start:**
+```bash
+./streaming_demo.sh
+```
+
+**Monitor:**
+```bash
+# Kafka UI
+open http://localhost:8080
+
+# Logs
+tail -f logs/producer_*.log
+tail -f logs/consumer_*.log
+
+# Database
+docker exec vn30-postgres psql -U postgres -d stock_prediction \
+  -c "SELECT * FROM stock_prices ORDER BY date DESC LIMIT 5;"
+```
+
+**Airflow (optional):**
+```bash
+export AIRFLOW_HOME=~/airflow
+airflow scheduler &
+airflow webserver -p 8081  # Note: 8081!
+```
+
+Access: http://localhost:8081
+
+**Stop:**
+```bash
+./streaming_stop.sh
+```
+
+---
+
+## ⚙️ Configuration
+
+Edit `config.py`:
 
 ```python
-# Database Configuration
+# Stock selection
+STOCK_SYMBOLS = VN30_STOCKS  # All 30 stocks
+# STOCK_SYMBOLS = ["VCB", "FPT"]  # Or specific stocks
+
+# Model parameters
+SEQUENCE_LENGTH = 60        # Days of lookback
+TRAINING_EPOCHS = 100       # Training iterations
+FUTURE_DAYS = 30            # Days ahead to predict
+
+# Database
 DB_CONFIG = {
     'host': 'localhost',
     'port': 5432,
@@ -177,86 +256,22 @@ DB_CONFIG = {
     'password': 'postgres'
 }
 
-# Stock Selection
-STOCK_SYMBOLS = VN30_STOCKS  # All 30 stocks
-# STOCK_SYMBOLS = ["VCB", "FPT"]  # Or specific stocks
-
-# Model Parameters
-SEQUENCE_LENGTH = 60      # Days of historical data to use
-TRAINING_EPOCHS = 100     # Training iterations
-FUTURE_DAYS = 30          # Days ahead to predict
-
-# Email Configuration
+# Email
 EMAIL_CONFIG = {
     'sender': 'your@email.com',
     'recipient': 'recipient@email.com',
     'sendgrid_api_key': 'YOUR_API_KEY'
 }
+
+# Streaming mode
+STREAMING_MODE = 'simulated'  # 'simulated' or 'real'
 ```
 
-## Usage
+---
 
-### Start Airflow
-```bash
-# Start scheduler and webserver
-airflow scheduler &
-airflow webserver -p 8080
-```
-
-### Access Airflow UI
-Open browser: `http://localhost:8080`
-
-Username: `admin`  
-Password: `admin`
-
-### Enable DAGs
-1. Navigate to DAGs page
-2. Toggle ON for both DAGs:
-   - `vn30_data_crawler`
-   - `vn30_model_training`
-
-### Manual Trigger
-Click the "play" button on either DAG to run immediately.
-
-### Schedule
-- **Data Crawler**: Runs daily at 5:00 PM Vietnam Time
-- **Model Training**: Runs daily at 6:00 PM Vietnam Time (1 hour after crawler)
-
-## Project Structure
-
-```
-stock-prediction/
-├── config.py                 # Configuration settings
-├── requirements.txt          # Python dependencies
-├── README.md                # This file
-│
-├── dags/                    # Airflow DAG definitions
-│   ├── vn30_data_crawler.py        # Data collection DAG
-│   └── vn30_model_training.py      # Model training DAG
-│
-├── modules/                 # Core business logic
-│   ├── __init__.py
-│   ├── database.py                 # PostgreSQL operations
-│   ├── data_fetcher.py             # API data collection
-│   ├── model_trainer.py            # LSTM training & prediction
-│   ├── orchestrator.py             # Workflow coordination
-│   └── email_notifier.py           # Email reporting
-│
-└── output/                  # Generated files (gitignored)
-    └── {STOCK_SYMBOL}/
-        ├── {STOCK}_price.csv              # Historical data backup
-        ├── {STOCK}_model.h5               # Trained LSTM model
-        ├── {STOCK}_scaler.pkl             # Data normalization scaler
-        ├── {STOCK}_evaluation.png         # Performance chart
-        ├── {STOCK}_future.png             # Prediction chart
-        └── {STOCK}_future_predictions.csv # Prediction data
-```
-
-## Database Schema
+## 📊 Database Schema
 
 ### Table: stock_prices
-Primary table storing daily stock price data.
-
 ```sql
 CREATE TABLE stock_prices (
     id SERIAL PRIMARY KEY,
@@ -271,13 +286,9 @@ CREATE TABLE stock_prices (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(stock_symbol, date)
 );
-
-CREATE INDEX idx_stock_date ON stock_prices(stock_symbol, date DESC);
 ```
 
 ### Table: crawl_metadata
-Tracks crawling status for incremental updates.
-
 ```sql
 CREATE TABLE crawl_metadata (
     stock_symbol VARCHAR(10) PRIMARY KEY,
@@ -288,129 +299,134 @@ CREATE TABLE crawl_metadata (
 );
 ```
 
-### Useful Queries
+---
 
-**Check data coverage:**
-```sql
-SELECT 
-    stock_symbol,
-    MIN(date) as first_date,
-    MAX(date) as last_date,
-    COUNT(*) as total_records
-FROM stock_prices
-GROUP BY stock_symbol
-ORDER BY stock_symbol;
-```
+## 🎓 Key Features
 
-**View recent prices:**
-```sql
-SELECT * FROM stock_prices 
-WHERE stock_symbol = 'VCB' 
-ORDER BY date DESC 
-LIMIT 30;
-```
+### Data Collection
+- **Incremental Crawling**: Only fetches new data (batch)
+- **Real-time Streaming**: Kafka-based ingestion (streaming)
+- **Tick Aggregation**: Intraday ticks → daily OHLCV (streaming)
+- **Deduplication**: PostgreSQL UNIQUE constraints
 
-## DAG Workflows
+### Machine Learning
+- **Enhanced LSTM**: Bidirectional + BatchNormalization
+- **Multi-feature Input**: 20+ technical indicators
+  - Moving Averages (SMA, EMA)
+  - MACD, RSI
+  - Bollinger Bands
+  - ATR, Volume indicators
+- **Early Stopping**: Prevents overfitting
+- **100 Epochs Training**: Ensures accuracy
 
-### DAG 1: vn30_data_crawler
+### Evaluation & Reporting
+- **Metrics**: RMSE, MAE, MAPE, R², Direction Accuracy
+- **Visualizations**: Actual vs Predicted charts
+- **30-day Predictions**: Future price forecasts
+- **Email Reports**: Automated notifications
 
-**Schedule**: Daily at 5:00 PM (Vietnam Time)  
-**Duration**: 5-10 minutes  
-**Purpose**: Incremental data collection
+---
 
-**Tasks:**
-1. `init_database`: Create tables if not exist
-2. `crawl_{STOCK}`: Fetch new data for each stock (parallel execution)
+## 🔍 Technology Stack
 
-**Incremental Logic:**
-- Queries database for last date
-- Only fetches data from (last_date + 1) to today
-- Inserts/updates with UPSERT to avoid duplicates
+### Core
+- **Python 3.8+**
+- **Apache Airflow 2.7.3** - Workflow orchestration
+- **PostgreSQL 15** - Data persistence
+- **Pandas** - Data transformation
 
-### DAG 2: vn30_model_training
+### Machine Learning
+- **TensorFlow 2.13** / **Keras** - LSTM models
+- **scikit-learn** - Data preprocessing
+- **TA-Lib** - Technical indicators
 
-**Schedule**: Daily at 6:00 PM (Vietnam Time)  
-**Duration**: 2-3 hours  
-**Purpose**: Model training and prediction
+### Streaming (Optional)
+- **Apache Kafka** - Message queue
+- **Kafka-Python** - Python client
+- **Docker Compose** - Infrastructure
 
-**Tasks:**
-1. `wait_for_data_crawler`: Waits for crawler DAG to complete
-2. `train_{STOCK}`: Train LSTM model for each stock
-3. `evaluate_{STOCK}`: Evaluate model performance
-4. `predict_{STOCK}`: Generate 30-day predictions
-5. `send_email_report`: Email summary with attachments
+---
 
-## API Reference
+## 📈 Performance
 
-### modules.database
+**Model Metrics (VCB example):**
+- RMSE: ~2,345 VND
+- MAE: ~1,234 VND
+- MAPE: ~3.45%
+- R²: ~0.89
+- Direction Accuracy: ~78.5%
 
-**get_db_connection()**: Returns PostgreSQL connection  
-**init_database()**: Creates database tables  
-**get_last_data_date(stock_symbol)**: Returns last date in DB  
-**insert_stock_data(df, stock_symbol)**: Inserts data with UPSERT  
-**load_stock_data_from_db(stock_symbol)**: Loads all data for a stock  
+**Data Volume:**
+- Historical: ~100K records (30 stocks × 10 years)
+- Streaming: 30 ticks/sec → 30 OHLCV/day (after aggregation)
+- Storage: ~100MB total
 
-### modules.data_fetcher
+---
 
-**fetch_stock_data(stock_symbol, **context)**: Crawls data incrementally  
-**fetch_all_stocks(stock_symbols, **context)**: Crawls multiple stocks  
+## 🐛 Troubleshooting
 
-### modules.model_trainer
-
-**train_prediction_model(stock_symbol)**: Trains LSTM model  
-**evaluate_model(stock_symbol)**: Evaluates model performance  
-**predict_future_prices(stock_symbol)**: Generates predictions  
-
-### modules.email_notifier
-
-**send_email_notification(stock_symbols)**: Sends summary email  
-
-## Troubleshooting
-
-### Database Connection Error
+### Port conflicts
 ```bash
-# Check PostgreSQL is running
-docker ps | grep stock-postgres
-
-# Restart if needed
-docker start stock-postgres
+# Stop conflicting services
+docker stop $(docker ps -q --filter "expose=5432")
+docker stop $(docker ps -q --filter "expose=9092")
 ```
 
-### Import Error
+### Airflow DAGs not showing
 ```bash
-# Ensure all dependencies are installed
-pip install -r requirements.txt
-
-# Check Python path in DAGs
-import sys
-print(sys.path)
+# Re-copy DAGs
+cp -r dags/* ~/airflow/dags/
+airflow dags list
 ```
 
-### Training Takes Too Long
-- Reduce `TRAINING_EPOCHS` in config.py (e.g., 50 instead of 100)
-- Train fewer stocks: `STOCK_SYMBOLS = ["VCB", "FPT"]`
+### Database connection errors
+```bash
+# Check PostgreSQL
+docker exec -it vn30-postgres-batch psql -U postgres -c "SELECT 1;"
+# Or for streaming
+docker exec -it vn30-postgres psql -U postgres -c "SELECT 1;"
+```
 
-### Email Not Sending
-- Verify SendGrid API key in `config.py`
-- Check sender email is verified in SendGrid
-- Review Airflow logs for error details
+---
 
-### Data Not Updating
-- Check crawler DAG ran successfully
-- Verify database connection
-- Review logs: `docker logs stock-postgres`
+## 📚 Documentation
 
-## License
+- **QUICK_DEMO_GUIDE.md** - Quick start guide for demos
+- **requirements.txt** - Python dependencies
+- **config.py** - Configuration reference
 
-MIT License - Free to use and modify
+---
 
-## Author
+## 🤝 Contributing
 
-Original: TuPH  
-Enhanced Version: 2025
+1. Fork the repository
+2. Create feature branch
+3. Commit changes
+4. Push to branch
+5. Create Pull Request
 
-## Acknowledgments
+---
 
-- VNDirect API for stock market data
-- Apache Airflow for workflow orchestration
-- TensorFlow/Keras for LSTM implementation
+## 📄 License
+
+MIT License - See LICENSE file
+
+---
+
+## 🎯 Use Cases
+
+### BATCH Flow - Best for:
+- Production ML pipelines
+- Daily automated predictions
+- Real stock analysis
+- Backtesting strategies
+
+### STREAMING Flow - Best for:
+- Architecture demonstrations
+- Kafka learning/teaching
+- Microservices patterns
+- Quick prototyping
+
+---
+
+**Built with ❤️ for VN30 stock prediction**
