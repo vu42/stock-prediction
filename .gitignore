@@ -40,3 +40,13 @@ plugins/
 *.png
 *.jpg
 *.jpeg
+
+# MCP
+.serena
+_docs
+
+ # Testing
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
