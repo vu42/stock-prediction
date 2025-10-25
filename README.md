@@ -111,12 +111,70 @@ Edit `config.py`:
 
 ## Usage
 
+### Option 1: Local Training (Without Airflow)
+
+Train models directly on your laptop:
+
+```bash
+# Activate environment
+source venv/bin/activate
+
+# Initialize database (first time only)
+python init_db.py
+
+# Train default stocks (VCB, FPT)
+python train_local.py
+
+# Train specific stock
+python train_local.py VCB
+
+# Train multiple stocks
+python train_local.py VCB FPT VNM
+
+# Train all VN30 stocks
+python train_local.py --all
+
+# Skip data fetching (use existing DB)
+python train_local.py VCB --no-fetch
+
+# Continue training existing model
+python train_local.py VCB --continue
+```
+
+### Option 2: Airflow Automation
+
 Enable DAGs in Airflow UI → Toggle ON `vn30_data_crawler` and `vn30_model_training`
 
 **Schedule:**
 
 - Data Crawler: 5:00 PM daily
 - Model Training: 6:00 PM daily
+
+## Model Output
+
+All trained models and results are saved in `output/{STOCK_SYMBOL}/`:
+
+```
+output/VCB/                                    # Example for VCB stock
+├── VCB_sklearn_model.pkl                     # Trained ensemble (4 models)
+├── VCB_sklearn_scaler.pkl                    # Data normalization scaler
+├── VCB_sklearn_evaluation.png                # Performance chart
+├── VCB_sklearn_future.png                    # 30-day prediction chart
+└── VCB_sklearn_future_predictions.csv        # Prediction data (CSV)
+```
+
+**View results:**
+```bash
+# Check output files
+ls output/VCB/
+
+# View predictions
+cat output/VCB/VCB_sklearn_future_predictions.csv
+
+# Open charts
+open output/VCB/VCB_sklearn_evaluation.png
+open output/VCB/VCB_sklearn_future.png
+```
 
 ## Database
 
