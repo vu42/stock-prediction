@@ -1,5 +1,5 @@
 """
-Integration tests for model_trainer_sklearn.py with REAL data from VNDirect API
+Integration tests for model_trainer.py with REAL data from VNDirect API
 Tests end-to-end workflow: fetch data → train model → evaluate → predict
 
 Run with: pytest tests/test_model_trainer_integration.py -v -s -m integration
@@ -15,10 +15,10 @@ from unittest.mock import patch
 
 # Import modules to test
 from modules.data_fetcher import fetch_stock_data
-from modules.model_trainer_sklearn import (
-    train_prediction_model_sklearn,
-    evaluate_model_sklearn,
-    predict_future_prices_sklearn,
+from modules.model_trainer import (
+    train_prediction_model,
+    evaluate_model,
+    predict_future_prices,
     calculate_technical_indicators,
 )
 
@@ -178,15 +178,13 @@ class TestRealDataTraining:
         # Now train model with this real data
         print(f"\n2️⃣  Training model on real data...")
 
-        with patch("modules.model_trainer_sklearn.BASE_OUTPUT_DIR", test_output_dir):
+        with patch("modules.model_trainer.BASE_OUTPUT_DIR", test_output_dir):
             # Mock database load to return our real fetched data
-            with patch(
-                "modules.model_trainer_sklearn.load_stock_data_from_db"
-            ) as mock_load:
+            with patch("modules.model_trainer.load_stock_data_from_db") as mock_load:
                 mock_load.return_value = real_data
 
                 # Train the model
-                train_result = train_prediction_model_sklearn(
+                train_result = train_prediction_model(
                     test_stock, continue_training=False
                 )
 
@@ -194,10 +192,10 @@ class TestRealDataTraining:
 
                 # Verify model files were created
                 model_path = os.path.join(
-                    test_output_dir, test_stock, f"{test_stock}_sklearn_model.pkl"
+                    test_output_dir, test_stock, f"{test_stock}_model.pkl"
                 )
                 scaler_path = os.path.join(
-                    test_output_dir, test_stock, f"{test_stock}_sklearn_scaler.pkl"
+                    test_output_dir, test_stock, f"{test_stock}_scaler.pkl"
                 )
 
                 assert os.path.exists(
@@ -257,24 +255,22 @@ class TestRealDataTraining:
                 real_data = mock_insert.call_args[0][0].copy()
 
         # Train model
-        with patch("modules.model_trainer_sklearn.BASE_OUTPUT_DIR", test_output_dir):
-            with patch(
-                "modules.model_trainer_sklearn.load_stock_data_from_db"
-            ) as mock_load:
+        with patch("modules.model_trainer.BASE_OUTPUT_DIR", test_output_dir):
+            with patch("modules.model_trainer.load_stock_data_from_db") as mock_load:
                 mock_load.return_value = real_data
-                train_result = train_prediction_model_sklearn(
+                train_result = train_prediction_model(
                     test_stock, continue_training=False
                 )
                 assert train_result is True
 
                 # Now evaluate
                 print(f"\n📊 Evaluating model performance...")
-                eval_result = evaluate_model_sklearn(test_stock)
+                eval_result = evaluate_model(test_stock)
 
                 # Evaluation might return False if insufficient test data
                 # but model files should still exist
                 model_path = os.path.join(
-                    test_output_dir, test_stock, f"{test_stock}_sklearn_model.pkl"
+                    test_output_dir, test_stock, f"{test_stock}_model.pkl"
                 )
                 assert os.path.exists(model_path), "Model should exist after evaluation"
 
@@ -307,20 +303,16 @@ class TestRealDataTraining:
                 fetch_stock_data(test_stock, to_date=end_date)
                 real_data = mock_insert.call_args[0][0].copy()
 
-        with patch("modules.model_trainer_sklearn.BASE_OUTPUT_DIR", test_output_dir):
-            with patch(
-                "modules.model_trainer_sklearn.load_stock_data_from_db"
-            ) as mock_load:
+        with patch("modules.model_trainer.BASE_OUTPUT_DIR", test_output_dir):
+            with patch("modules.model_trainer.load_stock_data_from_db") as mock_load:
                 mock_load.return_value = real_data
 
                 # Train
-                train_prediction_model_sklearn(test_stock, continue_training=False)
+                train_prediction_model(test_stock, continue_training=False)
 
                 # Predict next 30 days
                 print(f"\n🔮 Predicting next 30 days...")
-                predict_result = predict_future_prices_sklearn(
-                    test_stock, days_ahead=30
-                )
+                predict_result = predict_future_prices(test_stock, days_ahead=30)
 
                 # Check if prediction succeeded
                 if predict_result:
@@ -330,7 +322,7 @@ class TestRealDataTraining:
                     pred_csv = os.path.join(
                         test_output_dir,
                         test_stock,
-                        f"{test_stock}_sklearn_future_predictions.csv",
+                        f"{test_stock}_future_predictions.csv",
                     )
                     if os.path.exists(pred_csv):
                         pred_df = pd.read_csv(pred_csv)
@@ -449,7 +441,7 @@ class TestIndicatorImpact:
             mean_absolute_percentage_error,
             r2_score,
         )
-        from modules.model_trainer_sklearn import create_feature_matrix
+        from modules.model_trainer import create_feature_matrix
         import joblib
         import pickle
 
@@ -551,7 +543,7 @@ class TestIndicatorImpact:
         Returns:
             dict: Performance metrics
         """
-        from modules.model_trainer_sklearn import (
+        from modules.model_trainer import (
             calculate_technical_indicators,
             create_feature_matrix,
             build_ensemble_model,

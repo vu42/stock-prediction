@@ -1,5 +1,5 @@
 """
-Test suite for model_trainer_sklearn.py module
+Test suite for model_trainer.py module
 Tests ML training, evaluation, and prediction functionality
 """
 
@@ -10,21 +10,21 @@ from unittest.mock import Mock, patch, MagicMock, mock_open
 from datetime import datetime, timedelta
 
 # Import functions to test
-from modules.model_trainer_sklearn import (
+from modules.model_trainer import (
     get_stock_file_paths,
     calculate_technical_indicators,
     create_feature_matrix,
     build_ensemble_model,
-    train_prediction_model_sklearn,
-    evaluate_model_sklearn,
-    predict_future_prices_sklearn,
+    train_prediction_model_internal,
+    evaluate_model_internal,
+    predict_future_prices_internal,
 )
 
 
 class TestGetStockFilePaths:
     """Test file path generation"""
 
-    @patch("modules.model_trainer_sklearn.BASE_OUTPUT_DIR", "/tmp/output")
+    @patch("modules.model_trainer.BASE_OUTPUT_DIR", "/tmp/output")
     @patch("os.makedirs")
     def test_get_stock_file_paths(self, mock_makedirs):
         """Test that correct file paths are generated"""
@@ -32,13 +32,11 @@ class TestGetStockFilePaths:
         # mock the paths
         assert paths["dir"] == "/tmp/output/VCB"
         assert paths["csv"] == "/tmp/output/VCB/VCB_price.csv"
-        assert paths["model"] == "/tmp/output/VCB/VCB_sklearn_model.pkl"
-        assert paths["scaler"] == "/tmp/output/VCB/VCB_sklearn_scaler.pkl"
-        assert paths["plot"] == "/tmp/output/VCB/VCB_sklearn_evaluation.png"
-        assert paths["future_plot"] == "/tmp/output/VCB/VCB_sklearn_future.png"
-        assert (
-            paths["future_csv"] == "/tmp/output/VCB/VCB_sklearn_future_predictions.csv"
-        )
+        assert paths["model"] == "/tmp/output/VCB/VCB_model.pkl"
+        assert paths["scaler"] == "/tmp/output/VCB/VCB_scaler.pkl"
+        assert paths["plot"] == "/tmp/output/VCB/VCB_evaluation.png"
+        assert paths["future_plot"] == "/tmp/output/VCB/VCB_future.png"
+        assert paths["future_csv"] == "/tmp/output/VCB/VCB_future_predictions.csv"
         mock_makedirs.assert_called_once_with("/tmp/output/VCB", exist_ok=True)
 
 
@@ -276,11 +274,11 @@ class TestTrainPredictionModelSklearn:
             }
         )
 
-    @patch("modules.model_trainer_sklearn.load_stock_data_from_db")
-    @patch("modules.model_trainer_sklearn.BASE_OUTPUT_DIR", "/tmp/test_output")
+    @patch("modules.model_trainer.load_stock_data_from_db")
+    @patch("modules.model_trainer.BASE_OUTPUT_DIR", "/tmp/test_output")
     @patch("os.path.exists")
     @patch("builtins.open", new_callable=mock_open)
-    @patch("modules.model_trainer_sklearn.pickle.dump")
+    @patch("modules.model_trainer.pickle.dump")
     def test_train_model_initial_training(
         self,
         mock_pickle_dump,
@@ -295,7 +293,7 @@ class TestTrainPredictionModelSklearn:
         mock_exists.return_value = False  # No existing model
 
         # Execute
-        result = train_prediction_model_sklearn("VCB", continue_training=False)
+        result = train_prediction_model_internal("VCB", continue_training=False)
 
         # Assertions
         assert result is True, "Training should succeed"
@@ -305,7 +303,7 @@ class TestTrainPredictionModelSklearn:
         # The function successfully trains and saves models
         assert mock_file_open.called, "Should open files for saving"
 
-    @patch("modules.model_trainer_sklearn.load_stock_data_from_db")
+    @patch("modules.model_trainer.load_stock_data_from_db")
     def test_train_model_insufficient_data(self, mock_load_data):
         """Test training with insufficient data"""
         # Create very small dataset
@@ -323,26 +321,26 @@ class TestTrainPredictionModelSklearn:
         mock_load_data.return_value = small_df
 
         # Execute
-        result = train_prediction_model_sklearn("VCB")
+        result = train_prediction_model_internal("VCB")
 
         # Should fail due to insufficient data
         assert result is False
 
-    @patch("modules.model_trainer_sklearn.load_stock_data_from_db")
+    @patch("modules.model_trainer.load_stock_data_from_db")
     def test_train_model_empty_data(self, mock_load_data):
         """Test training with empty data"""
         mock_load_data.return_value = pd.DataFrame()
 
-        result = train_prediction_model_sklearn("VCB")
+        result = train_prediction_model_internal("VCB")
 
         assert result is False, "Should fail with empty data"
 
-    @patch("modules.model_trainer_sklearn.load_stock_data_from_db")
+    @patch("modules.model_trainer.load_stock_data_from_db")
     def test_train_model_database_error(self, mock_load_data):
         """Test handling of database errors"""
         mock_load_data.side_effect = Exception("Database connection failed")
 
-        result = train_prediction_model_sklearn("VCB")
+        result = train_prediction_model_internal("VCB")
 
         assert result is False, "Should handle database errors gracefully"
 
@@ -350,21 +348,21 @@ class TestTrainPredictionModelSklearn:
 class TestEvaluateModelSklearn:
     """Test model evaluation function"""
 
-    @patch("modules.model_trainer_sklearn.BASE_OUTPUT_DIR", "/tmp/test_output")
+    @patch("modules.model_trainer.BASE_OUTPUT_DIR", "/tmp/test_output")
     @patch("os.path.exists")
     def test_evaluate_model_no_model(self, mock_exists):
         """Test evaluation when model doesn't exist"""
         mock_exists.return_value = False
 
-        result = evaluate_model_sklearn("VCB")
+        result = evaluate_model_internal("VCB")
 
         assert result is False, "Should fail when model doesn't exist"
 
-    @patch("modules.model_trainer_sklearn.load_stock_data_from_db")
-    @patch("modules.model_trainer_sklearn.BASE_OUTPUT_DIR", "/tmp/test_output")
+    @patch("modules.model_trainer.load_stock_data_from_db")
+    @patch("modules.model_trainer.BASE_OUTPUT_DIR", "/tmp/test_output")
     @patch("os.path.exists")
     @patch("builtins.open", new_callable=mock_open)
-    @patch("modules.model_trainer_sklearn.pickle.load")
+    @patch("modules.model_trainer.pickle.load")
     @patch("matplotlib.pyplot.savefig")
     def test_evaluate_model_success(
         self,
@@ -425,7 +423,7 @@ class TestEvaluateModelSklearn:
         ]
 
         # Execute - this will likely fail due to feature mismatch, but tests the flow
-        result = evaluate_model_sklearn("VCB")
+        result = evaluate_model_internal("VCB")
 
         # Even if evaluation fails internally, the function structure is tested
         mock_load_data.assert_called_once_with("VCB")
@@ -434,17 +432,17 @@ class TestEvaluateModelSklearn:
 class TestPredictFuturePricesSklearn:
     """Test future price prediction"""
 
-    @patch("modules.model_trainer_sklearn.BASE_OUTPUT_DIR", "/tmp/test_output")
+    @patch("modules.model_trainer.BASE_OUTPUT_DIR", "/tmp/test_output")
     @patch("os.path.exists")
     def test_predict_no_model(self, mock_exists):
         """Test prediction when model doesn't exist"""
         mock_exists.return_value = False
 
-        result = predict_future_prices_sklearn("VCB", days_ahead=30)
+        result = predict_future_prices_internal("VCB", days_ahead=30)
 
         assert result is False, "Should fail when model doesn't exist"
 
-    @patch("modules.model_trainer_sklearn.load_stock_data_from_db")
+    @patch("modules.model_trainer.load_stock_data_from_db")
     def test_predict_insufficient_data(self, mock_load_data):
         """Test prediction with insufficient historical data"""
         # Small dataset
@@ -461,7 +459,7 @@ class TestPredictFuturePricesSklearn:
 
         mock_load_data.return_value = small_df
 
-        result = predict_future_prices_sklearn("VCB")
+        result = predict_future_prices_internal("VCB")
 
         assert result is False, "Should fail with insufficient data"
 
@@ -493,16 +491,14 @@ class TestIntegrationScenarios:
 
     def test_full_workflow(self, realistic_stock_data, tmp_path):
         """Test complete workflow: load data -> calculate indicators -> train"""
-        with patch(
-            "modules.model_trainer_sklearn.load_stock_data_from_db"
-        ) as mock_load, patch(
-            "modules.model_trainer_sklearn.BASE_OUTPUT_DIR", str(tmp_path)
+        with patch("modules.model_trainer.load_stock_data_from_db") as mock_load, patch(
+            "modules.model_trainer.BASE_OUTPUT_DIR", str(tmp_path)
         ):
 
             mock_load.return_value = realistic_stock_data
 
             # Test training
-            result = train_prediction_model_sklearn("TEST", continue_training=False)
+            result = train_prediction_model_internal("TEST", continue_training=False)
 
             # Should succeed with realistic data
             assert result is True
@@ -512,8 +508,8 @@ class TestIntegrationScenarios:
             assert stock_dir.exists()
 
             # Check that models were saved
-            model_file = stock_dir / "TEST_sklearn_model.pkl"
-            scaler_file = stock_dir / "TEST_sklearn_scaler.pkl"
+            model_file = stock_dir / "TEST_model.pkl"
+            scaler_file = stock_dir / "TEST_scaler.pkl"
             assert model_file.exists()
             assert scaler_file.exists()
 

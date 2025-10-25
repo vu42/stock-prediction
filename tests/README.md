@@ -27,7 +27,7 @@ pytest tests/test_data_fetcher.py -v
 tests/
 ├── test_data_fetcher.py              # Unit tests (fast, mocked)
 ├── test_data_fetcher_integration.py  # Integration tests (real API)
-├── test_model_trainer_sklearn.py     # Model unit tests
+├── test_model_trainer.py             # Model unit tests
 └── test_model_trainer_integration.py # End-to-end training tests
 ```
 

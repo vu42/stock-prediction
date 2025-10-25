@@ -98,7 +98,7 @@ def init_database():
             CREATE TABLE IF NOT EXISTS model_runs (
                 id SERIAL PRIMARY KEY,
                 stock_symbol VARCHAR(10) NOT NULL,
-                model_type VARCHAR(50) DEFAULT 'ensemble_sklearn',
+                model_type VARCHAR(50) DEFAULT 'ensemble',
                 train_date DATE NOT NULL,
                 rmse DECIMAL(10, 4),
                 mae DECIMAL(10, 4),
@@ -317,7 +317,7 @@ def get_database_stats():
         conn.close()
 
 
-def insert_predictions(stock_symbol, predictions_df, model_version="sklearn_ensemble"):
+def insert_predictions(stock_symbol, predictions_df, model_version="ensemble"):
     """
     Insert predictions into the predictions table.
 
@@ -404,7 +404,7 @@ def log_model_run(
     training_samples,
     test_samples,
     feature_count,
-    model_type="ensemble_sklearn",
+    model_type="ensemble",
 ):
     """
     Log a model training run to the database.
@@ -418,7 +418,7 @@ def log_model_run(
         training_samples: Number of training samples
         test_samples: Number of test samples
         feature_count: Number of features used
-        model_type: Type of model (default: ensemble_sklearn)
+        model_type: Type of model (default: ensemble)
 
     Returns:
         int: ID of inserted record

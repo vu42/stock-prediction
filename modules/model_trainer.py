@@ -1,8 +1,8 @@
 """
-Scikit-learn Model Training and Prediction Module
+Model Training and Prediction Module
 
-This module replaces TensorFlow/Keras with scikit-learn models for stock prediction.
-Uses ensemble of Random Forest, Gradient Boosting, and SVR for robust predictions.
+Ensemble machine learning models for stock prediction using Random Forest,
+Gradient Boosting, SVR, and Ridge regression.
 
 Features:
 1. Multi-feature input (OHLCV + Technical Indicators)
@@ -54,13 +54,11 @@ def get_stock_file_paths(stock_symbol):
     return {
         "dir": stock_dir,
         "csv": os.path.join(stock_dir, f"{stock_symbol}_price.csv"),
-        "model": os.path.join(stock_dir, f"{stock_symbol}_sklearn_model.pkl"),
-        "scaler": os.path.join(stock_dir, f"{stock_symbol}_sklearn_scaler.pkl"),
-        "plot": os.path.join(stock_dir, f"{stock_symbol}_sklearn_evaluation.png"),
-        "future_plot": os.path.join(stock_dir, f"{stock_symbol}_sklearn_future.png"),
-        "future_csv": os.path.join(
-            stock_dir, f"{stock_symbol}_sklearn_future_predictions.csv"
-        ),
+        "model": os.path.join(stock_dir, f"{stock_symbol}_model.pkl"),
+        "scaler": os.path.join(stock_dir, f"{stock_symbol}_scaler.pkl"),
+        "plot": os.path.join(stock_dir, f"{stock_symbol}_evaluation.png"),
+        "future_plot": os.path.join(stock_dir, f"{stock_symbol}_future.png"),
+        "future_csv": os.path.join(stock_dir, f"{stock_symbol}_future_predictions.csv"),
     }
 
 
@@ -191,9 +189,9 @@ def build_ensemble_model():
     return models
 
 
-def train_prediction_model_sklearn(stock_symbol, continue_training=True):
+def train_prediction_model_internal(stock_symbol, continue_training=True):
     """
-    Train scikit-learn ensemble model for stock prediction.
+    Train ensemble model for stock prediction.
 
     Args:
         stock_symbol: Stock symbol to train
@@ -369,9 +367,9 @@ def train_prediction_model_sklearn(stock_symbol, continue_training=True):
         return False
 
 
-def evaluate_model_sklearn(stock_symbol):
+def evaluate_model_internal(stock_symbol):
     """
-    Evaluate scikit-learn ensemble model with comprehensive metrics.
+    Evaluate ensemble model with comprehensive metrics.
 
     Returns:
         bool: True if successful
@@ -383,7 +381,7 @@ def evaluate_model_sklearn(stock_symbol):
         return False
 
     try:
-        print(f"[{stock_symbol}] Evaluating scikit-learn ensemble model...")
+        print(f"[{stock_symbol}] Evaluating ensemble model...")
 
         # Load models and scaler
         with open(paths["model"], "rb") as f:
@@ -498,9 +496,9 @@ def evaluate_model_sklearn(stock_symbol):
         return False
 
 
-def predict_future_prices_sklearn(stock_symbol, days_ahead=None):
+def predict_future_prices_internal(stock_symbol, days_ahead=None):
     """
-    Predict future stock prices using scikit-learn ensemble.
+    Predict future stock prices using ensemble.
 
     Args:
         stock_symbol: Stock symbol to predict
@@ -519,9 +517,7 @@ def predict_future_prices_sklearn(stock_symbol, days_ahead=None):
         return False
 
     try:
-        print(
-            f"[{stock_symbol}] Predicting {days_ahead} days ahead with scikit-learn..."
-        )
+        print(f"[{stock_symbol}] Predicting {days_ahead} days ahead...")
 
         # Load models and scaler
         with open(paths["model"], "rb") as f:
@@ -667,7 +663,7 @@ def predict_future_prices_sklearn(stock_symbol, days_ahead=None):
 
 def train_prediction_model(stock_symbol, continue_training=None):
     """
-    Train scikit-learn model for stock prediction.
+    Train model for stock prediction.
     Wrapper function for compatibility with existing DAGs.
 
     Args:
@@ -681,14 +677,14 @@ def train_prediction_model(stock_symbol, continue_training=None):
     """
     if continue_training is None:
         continue_training = CONTINUE_TRAINING
-    return train_prediction_model_sklearn(
+    return train_prediction_model_internal(
         stock_symbol, continue_training=continue_training
     )
 
 
 def evaluate_model(stock_symbol):
     """
-    Evaluate trained scikit-learn model.
+    Evaluate trained model.
     Wrapper function for compatibility with existing DAGs.
 
     Args:
@@ -697,7 +693,7 @@ def evaluate_model(stock_symbol):
     Returns:
         bool: True if successful
     """
-    return evaluate_model_sklearn(stock_symbol)
+    return evaluate_model_internal(stock_symbol)
 
 
 def predict_future_prices(stock_symbol, days_ahead=None):
@@ -714,4 +710,4 @@ def predict_future_prices(stock_symbol, days_ahead=None):
     """
     if days_ahead is None:
         days_ahead = FUTURE_DAYS
-    return predict_future_prices_sklearn(stock_symbol, days_ahead)
+    return predict_future_prices_internal(stock_symbol, days_ahead)

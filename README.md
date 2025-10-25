@@ -156,11 +156,11 @@ All trained models and results are saved in `output/{STOCK_SYMBOL}/`:
 
 ```
 output/VCB/                                    # Example for VCB stock
-├── VCB_sklearn_model.pkl                     # Trained ensemble (4 models)
-├── VCB_sklearn_scaler.pkl                    # Data normalization scaler
-├── VCB_sklearn_evaluation.png                # Performance chart
-├── VCB_sklearn_future.png                    # 30-day prediction chart
-└── VCB_sklearn_future_predictions.csv        # Prediction data (CSV)
+├── VCB_model.pkl                             # Trained ensemble (4 models)
+├── VCB_scaler.pkl                            # Data normalization scaler
+├── VCB_evaluation.png                        # Performance chart
+├── VCB_future.png                            # 30-day prediction chart
+└── VCB_future_predictions.csv                # Prediction data (CSV)
 ```
 
 **View results:**
@@ -169,11 +169,11 @@ output/VCB/                                    # Example for VCB stock
 ls output/VCB/
 
 # View predictions
-cat output/VCB/VCB_sklearn_future_predictions.csv
+cat output/VCB/VCB_future_predictions.csv
 
 # Open charts
-open output/VCB/VCB_sklearn_evaluation.png
-open output/VCB/VCB_sklearn_future.png
+open output/VCB/VCB_evaluation.png
+open output/VCB/VCB_future.png
 ```
 
 ## Database

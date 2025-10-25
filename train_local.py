@@ -11,10 +11,10 @@ Usage:
 import sys
 import argparse
 from datetime import datetime
-from modules.model_trainer_sklearn import (
-    train_prediction_model_sklearn,
-    evaluate_model_sklearn,
-    predict_future_prices_sklearn,
+from modules.model_trainer import (
+    train_prediction_model,
+    evaluate_model,
+    predict_future_prices,
 )
 from modules.data_fetcher import fetch_stock_data
 from modules.database import init_database
@@ -56,7 +56,7 @@ def train_single_stock(stock_symbol, fetch_data=True, continue_training=False):
         print(
             f"   Mode: {'Incremental (updating existing model)' if continue_training else 'Fresh training'}"
         )
-        train_result = train_prediction_model_sklearn(
+        train_result = train_prediction_model(
             stock_symbol, continue_training=continue_training
         )
 
@@ -67,7 +67,7 @@ def train_single_stock(stock_symbol, fetch_data=True, continue_training=False):
 
         # Step 3: Evaluate
         print("\nStep 3: Evaluating model...")
-        eval_result = evaluate_model_sklearn(stock_symbol)
+        eval_result = evaluate_model(stock_symbol)
         if eval_result:
             print("✅ Evaluation completed")
         else:
@@ -75,7 +75,7 @@ def train_single_stock(stock_symbol, fetch_data=True, continue_training=False):
 
         # Step 4: Predict future
         print("\nStep 4: Generating 30-day predictions...")
-        predict_result = predict_future_prices_sklearn(stock_symbol, days_ahead=30)
+        predict_result = predict_future_prices(stock_symbol, days_ahead=30)
         if predict_result:
             print("✅ Predictions generated")
         else:
@@ -84,10 +84,10 @@ def train_single_stock(stock_symbol, fetch_data=True, continue_training=False):
         print(f"\n{'='*60}")
         print(f"✅ {stock_symbol} completed successfully!")
         print(f"📁 Results saved to: output/{stock_symbol}/")
-        print(f"   - {stock_symbol}_sklearn_model.pkl")
-        print(f"   - {stock_symbol}_sklearn_scaler.pkl")
-        print(f"   - {stock_symbol}_sklearn_evaluation.png")
-        print(f"   - {stock_symbol}_sklearn_future_predictions.csv")
+        print(f"   - {stock_symbol}_model.pkl")
+        print(f"   - {stock_symbol}_scaler.pkl")
+        print(f"   - {stock_symbol}_evaluation.png")
+        print(f"   - {stock_symbol}_future_predictions.csv")
         print(f"{'='*60}")
         return True
 
