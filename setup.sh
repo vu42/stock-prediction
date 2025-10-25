@@ -18,32 +18,36 @@ echo "Found Python $python_version"
 # Install dependencies
 echo ""
 echo "[2/5] Installing Python dependencies..."
-pip3 install -r requirements.txt
-
-# Check PostgreSQL
+pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt
 echo ""
-echo "[3/5] Checking PostgreSQL..."
-if command -v psql &> /dev/null; then
-    echo "PostgreSQL is installed"
-elif command -v docker &> /dev/null; then
-    echo "PostgreSQL not found. Starting with Docker..."
-    docker run -d \
-      --name stock-postgres \
-      -e POSTGRES_PASSWORD=postgres \
-      -e POSTGRES_DB=stock_prediction \
-      -p 5432:5432 \
-      postgres:15
-    echo "PostgreSQL container started"
-else
-    echo "WARNING: PostgreSQL not found and Docker not available"
-    echo "Please install PostgreSQL manually"
-fi
+echo "[2b] Checking Flask-Session version..."
+python3 - <<'PY'
+import pkg_resources
+try:
+    v = pkg_resources.get_distribution('Flask-Session').version
+except Exception:
+    v = 'not installed'
+print(f"Flask-Session: {v}")
+PY
 
 # Initialize Airflow
 echo ""
 echo "[4/5] Initializing Airflow..."
 export AIRFLOW_HOME=~/airflow
-airflow db init
+
+# Run initial migration to create config file
+airflow db migrate 2>/dev/null || true
+
+# Fix auth manager configuration for Airflow 3.0 (if needed)
+if [ -f ~/airflow/airflow.cfg ]; then
+    if grep -q "^auth_manager = airflow.auth.managers.fab.fab_auth_manager.FabAuthManager" ~/airflow/airflow.cfg; then
+        echo "Fixing deprecated FAB auth manager configuration..."
+        sed -i.bak 's/^auth_manager = airflow.auth.managers.fab.fab_auth_manager.FabAuthManager/# auth_manager = airflow.auth.managers.fab.fab_auth_manager.FabAuthManager  # Disabled for Airflow 3.0/' ~/airflow/airflow.cfg
+    fi
+fi
+
+# Run migration again (will complete if first attempt failed due to auth manager)
+airflow db migrate
 
 # Create output directory
 echo ""
