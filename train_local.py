@@ -3,10 +3,11 @@
 Local training script - Train models on your laptop without Airflow
 
 Usage:
-    python train_local.py              # Train default stocks (VCB, FPT)
+    python train_local.py              # Train default stocks (VCB, FPT) with recursive model
     python train_local.py VCB          # Train single stock
     python train_local.py VCB FPT VNM  # Train multiple stocks
     python train_local.py --all        # Train all VN30 stocks
+    python train_local.py --multi-horizon  # Use direct multi-horizon model (1d, 3d, 7d, 15d, 30d)
 """
 import sys
 import argparse
@@ -15,13 +16,19 @@ from modules.model_trainer import (
     train_prediction_model,
     evaluate_model,
     predict_future_prices,
+    # Multi-horizon functions
+    train_multi_horizon_model,
+    evaluate_multi_horizon_model,
+    predict_multi_horizon,
 )
 from modules.data_fetcher import fetch_stock_data
 from modules.database import init_database
-from config import VN30_STOCKS
+from config import VN30_STOCKS, PREDICTION_HORIZONS
 
 
-def train_single_stock(stock_symbol, fetch_data=True, continue_training=False):
+def train_single_stock(
+    stock_symbol, fetch_data=True, continue_training=False, multi_horizon=False
+):
     """
     Train model for a single stock
 
@@ -29,12 +36,15 @@ def train_single_stock(stock_symbol, fetch_data=True, continue_training=False):
         stock_symbol: Stock symbol to train
         fetch_data: Whether to fetch latest data first
         continue_training: Whether to continue from existing model
+        multi_horizon: If True, use direct multi-horizon model (1d, 3d, 7d, 15d, 30d)
 
     Returns:
         bool: True if successful, False otherwise
     """
+    model_type = "Multi-Horizon Direct" if multi_horizon else "Recursive (1-step)"
+
     print(f"\n{'='*60}")
-    print(f"Training {stock_symbol}")
+    print(f"Training {stock_symbol} - {model_type} Model")
     print(f"{'='*60}\n")
 
     try:
@@ -56,9 +66,16 @@ def train_single_stock(stock_symbol, fetch_data=True, continue_training=False):
         print(
             f"   Mode: {'Incremental (updating existing model)' if continue_training else 'Fresh training'}"
         )
-        train_result = train_prediction_model(
-            stock_symbol, continue_training=continue_training
-        )
+
+        if multi_horizon:
+            print(f"   Horizons: {PREDICTION_HORIZONS} days")
+            train_result = train_multi_horizon_model(
+                stock_symbol, continue_training=continue_training
+            )
+        else:
+            train_result = train_prediction_model(
+                stock_symbol, continue_training=continue_training
+            )
 
         if not train_result:
             print(f"❌ Training failed for {stock_symbol}")
@@ -67,15 +84,26 @@ def train_single_stock(stock_symbol, fetch_data=True, continue_training=False):
 
         # Step 3: Evaluate
         print("\nStep 3: Evaluating model...")
-        eval_result = evaluate_model(stock_symbol)
+        if multi_horizon:
+            eval_result = evaluate_multi_horizon_model(stock_symbol)
+        else:
+            eval_result = evaluate_model(stock_symbol)
+
         if eval_result:
             print("✅ Evaluation completed")
         else:
             print("⚠️  Evaluation completed (check logs for details)")
 
         # Step 4: Predict future
-        print("\nStep 4: Generating 30-day predictions...")
-        predict_result = predict_future_prices(stock_symbol, days_ahead=30)
+        if multi_horizon:
+            print(
+                f"\nStep 4: Generating predictions for horizons {PREDICTION_HORIZONS}..."
+            )
+            predict_result = predict_multi_horizon(stock_symbol)
+        else:
+            print("\nStep 4: Generating 30-day predictions...")
+            predict_result = predict_future_prices(stock_symbol, days_ahead=30)
+
         if predict_result:
             print("✅ Predictions generated")
         else:
@@ -84,10 +112,19 @@ def train_single_stock(stock_symbol, fetch_data=True, continue_training=False):
         print(f"\n{'='*60}")
         print(f"✅ {stock_symbol} completed successfully!")
         print(f"📁 Results saved to: output/{stock_symbol}/")
-        print(f"   - {stock_symbol}_model.pkl")
-        print(f"   - {stock_symbol}_scaler.pkl")
-        print(f"   - {stock_symbol}_evaluation.png")
-        print(f"   - {stock_symbol}_future_predictions.csv")
+
+        if multi_horizon:
+            print(f"   - {stock_symbol}_multi_horizon_model.pkl")
+            print(f"   - {stock_symbol}_scaler.pkl")
+            print(f"   - {stock_symbol}_multi_horizon_evaluation.png")
+            print(f"   - {stock_symbol}_multi_horizon_predictions.csv")
+            print(f"   - {stock_symbol}_multi_horizon_future.png")
+        else:
+            print(f"   - {stock_symbol}_model.pkl")
+            print(f"   - {stock_symbol}_scaler.pkl")
+            print(f"   - {stock_symbol}_evaluation.png")
+            print(f"   - {stock_symbol}_future_predictions.csv")
+
         print(f"{'='*60}")
         return True
 
@@ -106,12 +143,17 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python train_local.py                  # Train VCB and FPT
+  python train_local.py                  # Train VCB and FPT (recursive model)
   python train_local.py VCB              # Train only VCB
   python train_local.py VCB FPT VNM      # Train multiple stocks
   python train_local.py --all            # Train all VN30 stocks
   python train_local.py VCB --no-fetch   # Skip data fetching
   python train_local.py VCB --continue   # Continue training existing model
+  
+Multi-Horizon Mode (direct prediction for 1d, 3d, 7d, 15d, 30d):
+  python train_local.py --multi-horizon          # Train with multi-horizon model
+  python train_local.py VCB --multi-horizon      # Single stock, multi-horizon
+  python train_local.py --all --multi-horizon    # All stocks, multi-horizon
         """,
     )
 
@@ -133,6 +175,11 @@ Examples:
         action="store_true",
         help="Continue training from existing model",
     )
+    parser.add_argument(
+        "--multi-horizon",
+        action="store_true",
+        help=f"Use direct multi-horizon model (horizons: {PREDICTION_HORIZONS} days)",
+    )
 
     args = parser.parse_args()
 
@@ -146,10 +193,17 @@ Examples:
     # Validate stocks
     stocks = [s.upper() for s in stocks]
 
+    # Model type description
+    if args.multi_horizon:
+        model_desc = f"Multi-Horizon Direct (horizons: {PREDICTION_HORIZONS})"
+    else:
+        model_desc = "Recursive (1-step, chained for multi-day)"
+
     print("\n" + "=" * 60)
     print("STOCK PREDICTION MODEL TRAINING")
     print("=" * 60)
     print(f"Stocks to train: {', '.join(stocks)}")
+    print(f"Model type: {model_desc}")
     print(f"Fetch data: {'No' if args.no_fetch else 'Yes'}")
     print(f"Training mode: {'Incremental' if args.continue_training else 'Fresh'}")
     print("=" * 60)
@@ -174,6 +228,7 @@ Examples:
             stock,
             fetch_data=not args.no_fetch,
             continue_training=args.continue_training,
+            multi_horizon=args.multi_horizon,
         ):
             success_count += 1
         else:
@@ -183,6 +238,7 @@ Examples:
     print("\n" + "=" * 60)
     print("TRAINING SUMMARY")
     print("=" * 60)
+    print(f"Model type: {model_desc}")
     print(f"Total stocks: {len(stocks)}")
     print(f"✅ Successful: {success_count}")
     print(f"❌ Failed: {len(failed_stocks)}")
