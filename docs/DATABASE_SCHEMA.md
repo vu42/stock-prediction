@@ -1,7 +1,6 @@
-# CELUM SERVICE SPECS
-## 1. DATABASE SCHEMA
+# 1. DATABASE SCHEMA
 
-### 1.1 Table: **user**
+## 1.1 Table: **user**
 
 | Field                  | Type          | Default           | Description                      |
 |------------------------|---------------|-------------------|----------------------------------|
@@ -24,7 +23,7 @@ Indexes:
 User_email_index (email)
 User_phone_number_index (phone_number)
 
-### 1.2 Table: **user_password**
+## 1.2 Table: **user_password**
 
 | Field                  | Type         | Default | Description                               |
 |------------------------|--------------|---------|-------------------------------------------|
@@ -36,7 +35,7 @@ User_phone_number_index (phone_number)
 | `password_salt`        | varchar(255) | ''      | Salt                                      |
 | `password_reset_token` | varchar(255) | ''      | Token used to reset password              |
 
-### 1.3 Table: **otp**
+## 1.3 Table: **otp**
 
 | Field               | Type         | Default | Description                           |
 |---------------------|--------------|---------|---------------------------------------|
@@ -53,7 +52,7 @@ User_phone_number_index (phone_number)
 | `created_at`        | bigint       | 0       | Activation code creation timestamp    |
 | `updated_at`        | bigint       | 0       | Activation code update timestamp      |
 
-### 1.4 Table: **training_configs**
+## 1.4 Table: **training_configs**
 
 | Field            | Type         | Default           | Description                                    |
 |------------------|--------------|-------------------|------------------------------------------------|
