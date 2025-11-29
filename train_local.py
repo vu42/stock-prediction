@@ -10,6 +10,7 @@ Usage:
     python train_local.py --multi-horizon  # Use direct multi-horizon model (1d, 3d, 7d, 15d, 30d)
 """
 import sys
+import time
 import argparse
 from datetime import datetime
 from modules.model_trainer import (
@@ -39,9 +40,19 @@ def train_single_stock(
         multi_horizon: If True, use direct multi-horizon model (1d, 3d, 7d, 15d, 30d)
 
     Returns:
-        bool: True if successful, False otherwise
+        tuple: (success: bool, timing_info: dict)
     """
     model_type = "Multi-Horizon Direct" if multi_horizon else "Recursive (1-step)"
+
+    # Timing tracking
+    timing = {
+        "fetch": 0.0,
+        "train": 0.0,
+        "evaluate": 0.0,
+        "predict": 0.0,
+        "total": 0.0,
+    }
+    total_start = time.time()
 
     print(f"\n{'='*60}")
     print(f"Training {stock_symbol} - {model_type} Model")
@@ -51,13 +62,15 @@ def train_single_stock(
         # Step 1: Fetch latest data (optional)
         if fetch_data:
             print("Step 1: Fetching latest data...")
+            step_start = time.time()
             context = {"to_date": datetime.now().strftime("%Y-%m-%d")}
             fetch_result = fetch_stock_data(stock_symbol, **context)
+            timing["fetch"] = time.time() - step_start
 
             if not fetch_result:
                 print(f"❌ Failed to fetch data for {stock_symbol}")
-                return False
-            print("✅ Data fetched successfully")
+                return False, timing
+            print(f"✅ Data fetched successfully ({timing['fetch']:.2f}s)")
         else:
             print("Step 1: Skipping data fetch (using existing database)")
 
@@ -66,6 +79,7 @@ def train_single_stock(
         print(
             f"   Mode: {'Incremental (updating existing model)' if continue_training else 'Fresh training'}"
         )
+        step_start = time.time()
 
         if multi_horizon:
             print(f"   Horizons: {PREDICTION_HORIZONS} days")
@@ -76,38 +90,52 @@ def train_single_stock(
             train_result = train_prediction_model(
                 stock_symbol, continue_training=continue_training
             )
+        timing["train"] = time.time() - step_start
 
         if not train_result:
             print(f"❌ Training failed for {stock_symbol}")
-            return False
-        print("✅ Model trained successfully")
+            return False, timing
+        print(f"✅ Model trained successfully ({timing['train']:.2f}s)")
 
         # Step 3: Evaluate
         print("\nStep 3: Evaluating model...")
+        step_start = time.time()
         if multi_horizon:
             eval_result = evaluate_multi_horizon_model(stock_symbol)
         else:
             eval_result = evaluate_model(stock_symbol)
+        timing["evaluate"] = time.time() - step_start
 
         if eval_result:
-            print("✅ Evaluation completed")
+            print(f"✅ Evaluation completed ({timing['evaluate']:.2f}s)")
         else:
-            print("⚠️  Evaluation completed (check logs for details)")
+            print(
+                f"⚠️  Evaluation completed ({timing['evaluate']:.2f}s) (check logs for details)"
+            )
 
         # Step 4: Predict future
         if multi_horizon:
             print(
                 f"\nStep 4: Generating predictions for horizons {PREDICTION_HORIZONS}..."
             )
-            predict_result = predict_multi_horizon(stock_symbol)
         else:
             print("\nStep 4: Generating 30-day predictions...")
+        step_start = time.time()
+
+        if multi_horizon:
+            predict_result = predict_multi_horizon(stock_symbol)
+        else:
             predict_result = predict_future_prices(stock_symbol, days_ahead=30)
+        timing["predict"] = time.time() - step_start
 
         if predict_result:
-            print("✅ Predictions generated")
+            print(f"✅ Predictions generated ({timing['predict']:.2f}s)")
         else:
-            print("⚠️  Prediction completed (check logs for details)")
+            print(
+                f"⚠️  Prediction completed ({timing['predict']:.2f}s) (check logs for details)"
+            )
+
+        timing["total"] = time.time() - total_start
 
         print(f"\n{'='*60}")
         print(f"✅ {stock_symbol} completed successfully!")
@@ -125,15 +153,23 @@ def train_single_stock(
             print(f"   - {stock_symbol}_evaluation.png")
             print(f"   - {stock_symbol}_future_predictions.csv")
 
+        print(f"\n⏱️  Timing breakdown for {stock_symbol}:")
+        if fetch_data:
+            print(f"   - Fetch data:  {timing['fetch']:>7.2f}s")
+        print(f"   - Training:    {timing['train']:>7.2f}s")
+        print(f"   - Evaluation:  {timing['evaluate']:>7.2f}s")
+        print(f"   - Prediction:  {timing['predict']:>7.2f}s")
+        print(f"   - TOTAL:       {timing['total']:>7.2f}s")
         print(f"{'='*60}")
-        return True
+        return True, timing
 
     except Exception as e:
+        timing["total"] = time.time() - total_start
         print(f"\n❌ Error training {stock_symbol}: {str(e)}")
         import traceback
 
         traceback.print_exc()
-        return False
+        return False, timing
 
 
 def main():
@@ -220,19 +256,26 @@ Multi-Horizon Mode (direct prediction for 1d, 3d, 7d, 15d, 30d):
     # Train each stock
     success_count = 0
     failed_stocks = []
+    all_timings = {}
+    total_start = time.time()
 
     for i, stock in enumerate(stocks, 1):
         print(f"\n[{i}/{len(stocks)}] Processing {stock}...")
 
-        if train_single_stock(
+        success, timing = train_single_stock(
             stock,
             fetch_data=not args.no_fetch,
             continue_training=args.continue_training,
             multi_horizon=args.multi_horizon,
-        ):
+        )
+        all_timings[stock] = timing
+
+        if success:
             success_count += 1
         else:
             failed_stocks.append(stock)
+
+    total_time = time.time() - total_start
 
     # Summary
     print("\n" + "=" * 60)
@@ -244,6 +287,49 @@ Multi-Horizon Mode (direct prediction for 1d, 3d, 7d, 15d, 30d):
     print(f"❌ Failed: {len(failed_stocks)}")
     if failed_stocks:
         print(f"Failed stocks: {', '.join(failed_stocks)}")
+
+    # Timing summary
+    print(f"\n⏱️  TIMING SUMMARY")
+    print("-" * 40)
+
+    # Per-stock timing
+    total_fetch = sum(t["fetch"] for t in all_timings.values())
+    total_train = sum(t["train"] for t in all_timings.values())
+    total_eval = sum(t["evaluate"] for t in all_timings.values())
+    total_pred = sum(t["predict"] for t in all_timings.values())
+
+    print(
+        f"{'Stock':<10} {'Fetch':>8} {'Train':>8} {'Eval':>8} {'Predict':>8} {'Total':>8}"
+    )
+    print("-" * 60)
+    for stock, timing in all_timings.items():
+        status = "✅" if stock not in failed_stocks else "❌"
+        print(
+            f"{status} {stock:<8} "
+            f"{timing['fetch']:>7.1f}s "
+            f"{timing['train']:>7.1f}s "
+            f"{timing['evaluate']:>7.1f}s "
+            f"{timing['predict']:>7.1f}s "
+            f"{timing['total']:>7.1f}s"
+        )
+    print("-" * 60)
+    print(
+        f"{'TOTAL':<10} "
+        f"{total_fetch:>7.1f}s "
+        f"{total_train:>7.1f}s "
+        f"{total_eval:>7.1f}s "
+        f"{total_pred:>7.1f}s "
+        f"{total_time:>7.1f}s"
+    )
+
+    # Average per stock
+    if success_count > 0:
+        avg_time = (
+            sum(all_timings[s]["total"] for s in all_timings if s not in failed_stocks)
+            / success_count
+        )
+        print(f"\nAverage time per successful stock: {avg_time:.1f}s")
+
     print("=" * 60)
 
     return 0 if success_count == len(stocks) else 1

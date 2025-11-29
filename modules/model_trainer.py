@@ -215,14 +215,14 @@ def build_ensemble_model():
             random_state=42,
             n_jobs=-1,
         ),
-        # "gradient_boosting": GradientBoostingRegressor(
-        #     n_estimators=100,
-        #     learning_rate=0.1,
-        #     max_depth=6,
-        #     min_samples_split=5,
-        #     min_samples_leaf=2,
-        #     random_state=42,
-        # ),
+        "gradient_boosting": GradientBoostingRegressor(
+            n_estimators=100,
+            learning_rate=0.1,
+            max_depth=6,
+            min_samples_split=5,
+            min_samples_leaf=2,
+            random_state=42,
+        ),
         "svr": SVR(kernel="rbf", C=1.0, gamma="scale", epsilon=0.1),
         "ridge": Ridge(alpha=1.0, random_state=42),
     }
