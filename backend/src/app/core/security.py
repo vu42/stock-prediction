@@ -39,23 +39,23 @@ def create_access_token(
 ) -> str:
     """
     Create a JWT access token.
-    
+
     Args:
         data: Data to encode in the token
         expires_delta: Token expiration time
-        
+
     Returns:
         Encoded JWT token
     """
     to_encode = data.copy()
-    
+
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(
             minutes=settings.jwt_access_token_expire_minutes
         )
-    
+
     to_encode.update({"exp": expire, "type": "access"})
     return jwt.encode(
         to_encode,
@@ -70,23 +70,23 @@ def create_refresh_token(
 ) -> str:
     """
     Create a JWT refresh token.
-    
+
     Args:
         data: Data to encode in the token
         expires_delta: Token expiration time
-        
+
     Returns:
         Encoded JWT token
     """
     to_encode = data.copy()
-    
+
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(
             days=settings.jwt_refresh_token_expire_days
         )
-    
+
     to_encode.update({"exp": expire, "type": "refresh"})
     return jwt.encode(
         to_encode,
@@ -98,13 +98,13 @@ def create_refresh_token(
 def decode_token(token: str) -> dict[str, Any]:
     """
     Decode and verify a JWT token.
-    
+
     Args:
         token: JWT token to decode
-        
+
     Returns:
         Decoded token payload
-        
+
     Raises:
         JWTError: If token is invalid
     """
@@ -121,14 +121,14 @@ async def get_current_user(
 ) -> User:
     """
     Get the current authenticated user from the JWT token.
-    
+
     Args:
         credentials: Bearer token credentials
         db: Database session
-        
+
     Returns:
         Current user
-        
+
     Raises:
         HTTPException: If authentication fails
     """
@@ -137,31 +137,31 @@ async def get_current_user(
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
+
     try:
         payload = decode_token(credentials.credentials)
         user_id: str = payload.get("sub")
         token_type: str = payload.get("type")
-        
+
         if user_id is None or token_type != "access":
             raise credentials_exception
-            
+
     except JWTError:
         raise credentials_exception
-    
+
     # Get user from database
     stmt = select(User).where(User.id == user_id)
     user = db.execute(stmt).scalar_one_or_none()
-    
+
     if user is None:
         raise credentials_exception
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User account is inactive",
         )
-    
+
     return user
 
 
@@ -172,13 +172,14 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 def require_roles(*roles: str):
     """
     Dependency factory that requires specific user roles.
-    
+
     Args:
         *roles: Allowed roles
-        
+
     Returns:
         Dependency function
     """
+
     async def role_checker(current_user: CurrentUser) -> User:
         if current_user.role not in roles:
             raise HTTPException(
@@ -186,35 +187,42 @@ def require_roles(*roles: str):
                 detail=f"Required role: {', '.join(roles)}",
             )
         return current_user
-    
+
     return role_checker
 
 
-# Pre-built role dependencies
-RequireDataScientist = Depends(require_roles(UserRole.DATA_SCIENTIST.value, UserRole.ADMIN.value))
+# Pre-built role dependencies (legacy - prefer type aliases below)
+RequireDataScientist = Depends(
+    require_roles(UserRole.DATA_SCIENTIST.value, UserRole.ADMIN.value)
+)
 RequireAdmin = Depends(require_roles(UserRole.ADMIN.value))
+
+# Type aliases for role-based access (use these instead of CurrentUser = RequireDataScientist)
+DataScientistUser = Annotated[
+    User, Depends(require_roles(UserRole.DATA_SCIENTIST.value, UserRole.ADMIN.value))
+]
+AdminUser = Annotated[User, Depends(require_roles(UserRole.ADMIN.value))]
 
 
 def authenticate_user(db: Session, username: str, password: str) -> User | None:
     """
     Authenticate a user by username and password.
-    
+
     Args:
         db: Database session
         username: Username
         password: Plain text password
-        
+
     Returns:
         User if authentication succeeds, None otherwise
     """
     stmt = select(User).where(User.username == username)
     user = db.execute(stmt).scalar_one_or_none()
-    
+
     if not user:
         return None
-    
+
     if not verify_password(password, user.password_hash):
         return None
-    
-    return user
 
+    return user

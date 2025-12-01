@@ -6,8 +6,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas import ChartDataResponse, ModelStatusResponse, PredictionResponse
-from app.services import get_chart_data, get_model_status, get_stock_predictions
+from app.schemas import ChartDataResponse, ModelOverview, ModelStatusResponse, PredictionResponse
+from app.services import get_chart_data, get_model_status, get_models_overview, get_stock_predictions
 
 router = APIRouter(tags=["Predictions"])
 
@@ -57,4 +57,22 @@ async def get_model_status_for_ticker(
     """
     result = get_model_status(db, ticker)
     return ModelStatusResponse(**result)
+
+
+@router.get("/models", response_model=list[ModelOverview])
+async def get_models_overview_endpoint(
+    db: Session = Depends(get_db),
+):
+    """
+    Populate models overview table with performance metrics and predictions.
+    
+    Returns a list of all active stock models with:
+    - **ticker**: Stock ticker symbol
+    - **lastTrained**: ISO timestamp of last training run
+    - **mape**: MAPE percentages for each horizon (7d, 15d, 30d)
+    - **predictions**: Predicted percentage changes for each horizon
+    - **plotUrl**: S3 URL to evaluation plot image
+    """
+    results = get_models_overview(db)
+    return [ModelOverview(**r) for r in results]
 

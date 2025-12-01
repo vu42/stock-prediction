@@ -460,3 +460,98 @@ def get_model_status(db: Session, ticker: str) -> dict[str, Any]:
         "metrics": metrics_dict,
     }
 
+
+def get_models_overview(db: Session) -> list[dict[str, Any]]:
+    """
+    Get models overview for all active stocks.
+    
+    Returns data for the Models page table including:
+    - ticker
+    - lastTrained (from ModelStatus.last_updated_at)
+    - mape for 7d, 15d, 30d horizons
+    - predictions for 7d, 15d, 30d horizons
+    - plotUrl from latest experiment artifact
+    
+    Args:
+        db: Database session
+        
+    Returns:
+        List of model overview dicts
+    """
+    from app.db.models import ExperimentTickerArtifact
+    
+    # Get all active stocks
+    stocks_stmt = select(Stock).where(Stock.is_active == True)  # noqa: E712
+    stocks = db.execute(stocks_stmt).scalars().all()
+    
+    results = []
+    horizons = [7, 15, 30]
+    
+    for stock in stocks:
+        # Get latest model status for lastTrained
+        status_stmt = (
+            select(ModelStatus)
+            .where(ModelStatus.stock_id == stock.id)
+            .order_by(ModelStatus.last_updated_at.desc())
+            .limit(1)
+        )
+        status = db.execute(status_stmt).scalar_one_or_none()
+        
+        last_trained = None
+        mape_dict: dict[str, float | None] = {"7d": None, "15d": None, "30d": None}
+        
+        if status:
+            last_trained = status.last_updated_at
+            
+            # Get horizon metrics for MAPE
+            metrics_stmt = (
+                select(ModelHorizonMetric)
+                .where(ModelHorizonMetric.model_status_id == status.id)
+            )
+            metrics = db.execute(metrics_stmt).scalars().all()
+            
+            for m in metrics:
+                key = f"{m.horizon_days}d"
+                if key in mape_dict:
+                    mape_dict[key] = float(m.mape_pct)
+        
+        # Get predictions for each horizon
+        predictions_dict: dict[str, float | None] = {"7d": None, "15d": None, "30d": None}
+        for horizon in horizons:
+            pred_stmt = (
+                select(StockPredictionSummary.predicted_change_pct)
+                .where(
+                    and_(
+                        StockPredictionSummary.stock_id == stock.id,
+                        StockPredictionSummary.horizon_days == horizon,
+                    )
+                )
+                .order_by(StockPredictionSummary.as_of_date.desc())
+                .limit(1)
+            )
+            pred = db.execute(pred_stmt).scalar_one_or_none()
+            if pred:
+                predictions_dict[f"{horizon}d"] = float(pred)
+        
+        # Get latest artifact for plotUrl
+        plot_url = None
+        artifact_stmt = (
+            select(ExperimentTickerArtifact.evaluation_png_url)
+            .where(ExperimentTickerArtifact.stock_id == stock.id)
+            .order_by(ExperimentTickerArtifact.created_at.desc())
+            .limit(1)
+        )
+        artifact_url = db.execute(artifact_stmt).scalar_one_or_none()
+        if artifact_url:
+            plot_url = artifact_url
+        
+        results.append({
+            "ticker": stock.ticker,
+            "lastTrained": last_trained.isoformat() if last_trained else None,
+            "mape": mape_dict,
+            "predictions": predictions_dict,
+            "plotUrl": plot_url,
+        })
+    
+    return results
+

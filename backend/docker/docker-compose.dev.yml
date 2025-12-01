@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # PostgreSQL Database
   postgres:
@@ -129,4 +127,3 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
-

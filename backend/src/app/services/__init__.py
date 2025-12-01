@@ -24,6 +24,7 @@ from app.services.predictions import (
     get_current_price,
     get_market_table_data,
     get_model_status,
+    get_models_overview,
     get_stock_predictions,
     get_top_picks,
 )
@@ -56,6 +57,7 @@ __all__ = [
     "get_stock_predictions",
     "get_chart_data",
     "get_model_status",
+    "get_models_overview",
     "get_current_price",
     # Email
     "send_email_notification",

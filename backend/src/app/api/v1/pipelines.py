@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.security import CurrentUser, RequireDataScientist
+from app.core.security import CurrentUser, DataScientistUser
 from app.db.models import PipelineDAG, PipelineRun, PipelineRunLog, PipelineRunTask
 from app.db.session import get_db
 from app.schemas import (
@@ -115,8 +115,8 @@ async def get_dag(
 @router.post("/dags/{dag_id}/trigger", response_model=TriggerRunResponse)
 async def trigger_dag_run(
     dag_id: str,
+    current_user: DataScientistUser,
     request: TriggerRunRequest | None = None,
-    current_user: CurrentUser = RequireDataScientist,
     db: Session = Depends(get_db),
 ):
     """
@@ -157,7 +157,7 @@ async def trigger_dag_run(
 async def pause_dag(
     dag_id: str,
     request: PauseDAGRequest,
-    current_user: CurrentUser = RequireDataScientist,
+    current_user: DataScientistUser,
     db: Session = Depends(get_db),
 ):
     """
@@ -186,7 +186,7 @@ async def pause_dag(
 async def stop_dag_run(
     dag_id: str,
     request: StopRunRequest,
-    current_user: CurrentUser = RequireDataScientist,
+    current_user: DataScientistUser,
     db: Session = Depends(get_db),
 ):
     """
@@ -227,13 +227,13 @@ async def stop_dag_run(
 @router.get("/dags/{dag_id}/runs", response_model=DAGRunsListResponse)
 async def list_dag_runs(
     dag_id: str,
+    current_user: DataScientistUser,
     state: str | None = Query(None),
     from_date: str | None = Query(None, alias="from"),
     to_date: str | None = Query(None, alias="to"),
     search_run_id: str | None = Query(None, alias="searchRunId"),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100, alias="pageSize"),
-    current_user: CurrentUser = RequireDataScientist,
     db: Session = Depends(get_db),
 ):
     """
@@ -363,8 +363,8 @@ async def get_run_gantt(
 @router.get("/runs/{run_id}/logs", response_model=LogsResponse)
 async def get_run_logs(
     run_id: str,
-    cursor: str | None = Query(None),
     current_user: CurrentUser,
+    cursor: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
     """
@@ -395,7 +395,7 @@ async def get_run_logs(
 async def update_dag_settings(
     dag_id: str,
     request: DAGSettingsUpdate,
-    current_user: CurrentUser = RequireDataScientist,
+    current_user: DataScientistUser,
     db: Session = Depends(get_db),
 ):
     """

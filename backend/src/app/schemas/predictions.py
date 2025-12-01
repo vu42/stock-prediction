@@ -73,3 +73,16 @@ class PredictionSummaryCreate(BaseModel):
     class Config:
         populate_by_name = True
 
+
+class ModelOverview(BaseModel):
+    """Model overview schema for Models page table."""
+
+    ticker: str
+    last_trained: datetime | None = Field(None, alias="lastTrained")
+    mape: dict[str, float | None]  # {"7d": 5.2, "15d": 7.8, "30d": 10.5}
+    predictions: dict[str, float | None]  # {"7d": 2.3, "15d": -1.5, "30d": 4.2}
+    plot_url: str | None = Field(None, alias="plotUrl")
+
+    class Config:
+        populate_by_name = True
+
