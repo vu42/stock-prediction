@@ -1,6 +1,6 @@
 """
 VN30 Model Training & Prediction DAG
-Train LSTM models and generate predictions
+Train ensemble models and generate predictions
 
 Schedule: Daily at 6:00 PM Vietnam Time (after data crawler)
 Duration: 2-3 hours
@@ -9,8 +9,13 @@ Purpose: Train models on latest data and predict 30-day future prices
 import sys
 import os
 
-# Add project root to path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add backend src to path for imports
+backend_src = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "backend",
+    "src",
+)
+sys.path.insert(0, backend_src)
 
 import pendulum
 from datetime import timedelta
@@ -18,29 +23,47 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 
-from config import STOCK_SYMBOLS
-from modules.model_trainer import train_prediction_model, evaluate_model, predict_future_prices
-from modules.email_notifier import send_email_notification
+# Import from new backend structure
+from app.core.config import settings
+from app.db.session import SessionLocal
+from app.services.model_trainer import (
+    train_prediction_model,
+    evaluate_model,
+    predict_future_prices,
+)
+from app.services.email_service import send_email_notification
 
 
 def train_stock_task(stock_symbol):
-    """Train LSTM model for a single stock."""
-    return train_prediction_model(stock_symbol)
+    """Train model for a single stock."""
+    db = SessionLocal()
+    try:
+        return train_prediction_model(db, stock_symbol)
+    finally:
+        db.close()
 
 
 def evaluate_stock_task(stock_symbol):
     """Evaluate model for a single stock."""
-    return evaluate_model(stock_symbol)
+    db = SessionLocal()
+    try:
+        return evaluate_model(db, stock_symbol)
+    finally:
+        db.close()
 
 
 def predict_stock_task(stock_symbol):
     """Generate future predictions for a single stock."""
-    return predict_future_prices(stock_symbol)
+    db = SessionLocal()
+    try:
+        return predict_future_prices(db, stock_symbol)
+    finally:
+        db.close()
 
 
 def send_email_task(**context):
     """Send summary email report."""
-    return send_email_notification(STOCK_SYMBOLS)
+    return send_email_notification(settings.vn30_stocks)
 
 
 # Vietnam timezone
@@ -49,7 +72,7 @@ local_tz = pendulum.timezone("Asia/Ho_Chi_Minh")
 # Default arguments
 default_args = {
     'owner': 'ml_engineering',
-    'email': ['tuph.alex@gmail.com'],
+    'email': [settings.email_recipient],
     'email_on_failure': True,
     'email_on_retry': False,
     'retries': 1,
@@ -60,11 +83,11 @@ default_args = {
 with DAG(
     dag_id='vn30_model_training',
     default_args=default_args,
-    description=f'LSTM model training and prediction for {len(STOCK_SYMBOLS)} VN30 stocks',
+    description=f'Ensemble model training and prediction for {len(settings.vn30_stocks)} VN30 stocks',
     schedule_interval='0 18 * * *',
     start_date=pendulum.datetime(2025, 10, 1, tz=local_tz),
     catchup=False,
-    tags=['vn30', 'ml', 'lstm', 'training', 'prediction'],
+    tags=['vn30', 'ml', 'ensemble', 'training', 'prediction'],
     max_active_runs=1,
 ) as dag:
     
@@ -81,7 +104,7 @@ with DAG(
     # Tasks: Train, Evaluate, Predict for each stock
     all_predict_tasks = []
     
-    for stock in STOCK_SYMBOLS:
+    for stock in settings.vn30_stocks:
         # Train
         train_task = PythonOperator(
             task_id=f'train_{stock}',
@@ -115,4 +138,3 @@ with DAG(
     
     # All predictions must complete before email
     all_predict_tasks >> send_email
-

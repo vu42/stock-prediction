@@ -69,7 +69,11 @@ API_BASE_URL = "https://api-finfo.vndirect.com.vn/v4/stock_prices"
 # MODEL CONFIGURATION
 # ============================================================================
 SEQUENCE_LENGTH = 60  # Days to look back
-FUTURE_DAYS = 30  # Days to predict ahead
+FUTURE_DAYS = 30  # Days to predict ahead (for recursive model)
+
+# Direct Multi-Horizon Prediction
+# Each horizon gets its own dedicated model trained directly on that target
+PREDICTION_HORIZONS = [7, 15, 30]  # Days ahead to predict directly
 
 # Scikit-learn Model Configuration
 RANDOM_FOREST_ESTIMATORS = 100

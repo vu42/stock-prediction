@@ -7,9 +7,14 @@ __pycache__/
 *$py.class
 *.so
 .Python
+*.egg-info/
+.eggs/
+dist/
+build/
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 
@@ -45,8 +50,23 @@ plugins/
 .serena
 _docs
 
- # Testing
+# Testing
 .coverage
 .coverage.*
 htmlcov/
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+!backend/env.example
+
+# Backend specific
+backend/.venv/
+backend/*.egg-info/
+
+# Docker
+docker-compose.override.yml

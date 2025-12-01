@@ -1,203 +1,243 @@
 # VN30 Stock Price Prediction System
 
-Machine learning system for predicting Vietnam's VN30 stock prices using ensemble models and Apache Airflow orchestration.
+Machine learning system for predicting Vietnam's VN30 stock prices using ensemble models, FastAPI REST API, and Apache Airflow orchestration.
 
 ## Overview
 
 Automated stock prediction system featuring:
 
+- **FastAPI REST API** with JWT authentication and role-based access
 - **Incremental data collection** from VNDirect API
 - **Ensemble ML models** (Random Forest + Gradient Boosting + SVR + Ridge)
 - **Technical indicators** (23 features: RSI, MACD, Bollinger Bands, etc.)
 - **30-day predictions** with performance evaluation
 - **Airflow automation** for daily updates
-- **PostgreSQL storage** with UPSERT deduplication
+- **PostgreSQL storage** with SQLAlchemy ORM
+- **RQ Workers** for background job processing
+- **S3/MinIO** for artifact storage
 
-## Architecture
+## Project Structure
 
 ```
-Airflow DAGs
-├── Data Crawler (5PM daily)    → PostgreSQL (UPSERT)
-└── Model Training (6PM daily)  → Train → Evaluate → Predict → Email
+stock-prediction/
+├── backend/                    # Backend monorepo
+│   ├── src/
+│   │   ├── app/               # FastAPI Application
+│   │   │   ├── api/v1/        # REST API endpoints
+│   │   │   ├── core/          # Config, security, logging
+│   │   │   ├── db/            # SQLAlchemy models
+│   │   │   ├── schemas/       # Pydantic schemas
+│   │   │   ├── services/      # Business logic
+│   │   │   └── integrations/  # External services
+│   │   └── worker/            # RQ background worker
+│   ├── migrations/            # Alembic migrations
+│   ├── tests/                 # Test suite
+│   ├── docker/                # Docker configuration
+│   └── pyproject.toml         # Python dependencies
+├── dags/                       # Airflow DAGs
+│   ├── vn30_data_crawler.py
+│   └── vn30_model_training.py
+├── docs/                       # Documentation
+├── output/                     # Model outputs
+├── modules/                    # Legacy modules (deprecated)
+└── tests/                      # Legacy tests (deprecated)
 ```
-
-**Workflow:**
-
-1. Fetch incremental data from VNDirect API
-2. Calculate 23 technical indicators
-3. Train ensemble models (4 algorithms)
-4. Generate 30-day predictions
-5. Send email reports with charts
-
-## Training Architecture
-
-### Ensemble Learning Approach
-
-Uses **4 diverse ML algorithms** that vote together:
-
-1. **Random Forest** (Bagging)
-   - 100 decision trees, reduces variance
-   - Handles non-linear relationships
-
-2. **Gradient Boosting** (Boosting)
-   - Sequential learning, corrects previous errors
-   - Strong performance on tabular data
-
-3. **Support Vector Regressor** (Kernel Methods)
-   - RBF kernel for high-dimensional mapping
-   - Robust to outliers
-
-4. **Ridge Regression** (Linear)
-   - L2 regularization baseline
-   - Fast and interpretable
-
-### Feature Engineering (23 Features)
-
-**Price Indicators:** SMA (5/20/60), EMA (12/26), MACD, Bollinger Bands  
-**Momentum:** RSI, ROC, Momentum  
-**Volatility:** ATR, BB_position  
-**Volume:** Volume_MA, Volume_ratio  
-**Crossovers:** SMA crossovers
-
-### Time Series Processing
-
-- **Sliding Window:** 60-day lookback sequences
-- **Normalization:** StandardScaler per feature
-- **Train/Test Split:** 80/20 chronological split
-- **Ensemble Averaging:** Mean of 4 model predictions
-
-## Requirements
-
-- Python 3.8+, PostgreSQL 12+
-- 8GB RAM, 10GB disk space
-- See `requirements.txt` for dependencies
 
 ## Quick Start
 
+### Option 1: Docker (Recommended)
+
 ```bash
-# Install
-pip install -r requirements.txt
-# if you encounter an error, try this:
-pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt 
+# Start all services
+cd backend
+docker-compose -f docker/docker-compose.dev.yml up -d
 
-# Setup PostgreSQL (Docker) or use your system Postgresql
-docker run -d --name stock-postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=stock_prediction \
-  -p 5432:5432 postgres:15
+# Run migrations
+docker exec stock-prediction-api alembic upgrade head
 
-# Configure Airflow
-airflow db migrate
-airflow users create --username admin --password admin \
-  --firstname Admin --lastname User --role Admin \
-  --email admin@example.com
-cp -r dags/* ~/airflow/dags/
-
-# Start
-airflow scheduler &
-airflow webserver -p 8080
+# Access API
+open http://localhost:8000/docs
 ```
 
-Access: `http://localhost:8080` (admin/admin)
+### Option 2: Local Development
 
-## Configuration
+```bash
+# 1. Setup backend
+cd backend
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
 
-Edit `config.py`:
+# 2. Start dependencies
+docker-compose -f docker/docker-compose.dev.yml up -d postgres redis minio
 
-- Database credentials
-- Stock symbols (all VN30 or specific stocks)
-- Model parameters (sequence length, epochs)
-- Email settings (SendGrid API key)
+# 3. Configure
+cp env.example .env
+# Edit .env with your settings
 
-## Usage
+# 4. Run migrations
+alembic upgrade head
 
-### Option 1: Local Training (Without Airflow)
+# 5. Start API
+uvicorn app.main:app --reload
 
-Train models directly on your laptop:
+# 6. Start worker (another terminal)
+python -m worker.main
+```
+
+### Option 3: Local Training (Without API)
+
+Train models directly using the legacy modules:
 
 ```bash
 # Activate environment
 source venv/bin/activate
 
-# Initialize database (first time only)
+# Initialize database
 python init_db.py
 
-# Train default stocks (VCB, FPT)
-python train_local.py
-
-# Train specific stock
-python train_local.py VCB
-
-# Train multiple stocks
+# Train specific stocks
 python train_local.py VCB FPT VNM
 
 # Train all VN30 stocks
 python train_local.py --all
-
-# Skip data fetching (use existing DB)
-python train_local.py VCB --no-fetch
-
-# Continue training existing model
-python train_local.py VCB --continue
 ```
 
-### Option 2: Airflow Automation
+## API Endpoints
 
-Enable DAGs in Airflow UI → Toggle ON `vn30_data_crawler` and `vn30_model_training`
+See full API documentation at `http://localhost:8000/docs` after starting the server.
+
+### Key Endpoints
+
+| Category | Endpoint | Description |
+|----------|----------|-------------|
+| Auth | `POST /api/v1/auth/login` | Get JWT tokens |
+| Stocks | `GET /api/v1/stocks/top-picks` | Should Buy/Sell picks |
+| Stocks | `GET /api/v1/stocks/market-table` | Market overview |
+| Predictions | `GET /api/v1/stocks/{ticker}/chart` | Price + forecast chart |
+| Training | `POST /api/v1/experiments/run` | Start training experiment |
+| Pipelines | `GET /api/v1/pipeline/dags` | List Airflow DAGs |
+
+## Architecture
+
+### Data Flow
+
+```
+VNDirect API → Data Crawler DAG → PostgreSQL
+                                       ↓
+                              Training DAG / API
+                                       ↓
+                              ML Models (Ensemble)
+                                       ↓
+                              Predictions → S3
+                                       ↓
+                              REST API → Frontend
+```
+
+### Ensemble Learning
+
+Uses **4 diverse ML algorithms** that vote together:
+
+1. **Random Forest** - 100 decision trees, reduces variance
+2. **Gradient Boosting** - Sequential learning, corrects errors
+3. **Support Vector Regressor** - RBF kernel, robust to outliers
+4. **Ridge Regression** - L2 regularized linear baseline
+
+### Feature Engineering (23 Features)
+
+- **Price Indicators:** SMA (5/20/60), EMA (12/26), MACD, Bollinger Bands
+- **Momentum:** RSI, ROC, Momentum
+- **Volatility:** ATR, BB_position
+- **Volume:** Volume_MA, Volume_ratio
+- **Crossovers:** SMA crossovers
+
+## Configuration
+
+### Environment Variables
+
+Key settings in `backend/.env`:
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection |
+| `REDIS_URL` | Redis for task queue |
+| `JWT_SECRET_KEY` | JWT signing key |
+| `SENDGRID_API_KEY` | Email notifications |
+| `S3_ENDPOINT_URL` | S3/MinIO for artifacts |
+
+### Airflow DAGs
 
 **Schedule:**
-
-- Data Crawler: 5:00 PM daily
-- Model Training: 6:00 PM daily
+- Data Crawler: 5:00 PM daily (Vietnam time)
+- Model Training: 6:00 PM daily (Vietnam time)
 
 ## Model Output
 
-All trained models and results are saved in `output/{STOCK_SYMBOL}/`:
+Trained models saved in `output/{STOCK_SYMBOL}/`:
 
 ```
-output/VCB/                                    # Example for VCB stock
-├── VCB_model.pkl                             # Trained ensemble (4 models)
-├── VCB_scaler.pkl                            # Data normalization scaler
-├── VCB_evaluation.png                        # Performance chart
-├── VCB_future.png                            # 30-day prediction chart
-└── VCB_future_predictions.csv                # Prediction data (CSV)
+output/VCB/
+├── VCB_model.pkl           # Trained ensemble
+├── VCB_scaler.pkl          # Feature scaler
+├── VCB_evaluation.png      # Performance chart
+├── VCB_future.png          # Prediction chart
+└── VCB_future_predictions.csv
 ```
 
-**View results:**
+## Testing
+
 ```bash
-# Check output files
-ls output/VCB/
+# Backend tests
+cd backend
+pytest
 
-# View predictions
-cat output/VCB/VCB_future_predictions.csv
+# With coverage
+pytest --cov=app --cov-report=html
 
-# Open charts
-open output/VCB/VCB_evaluation.png
-open output/VCB/VCB_future.png
+# Legacy tests
+cd ..
+pytest tests/
 ```
 
 ## Database
 
-**Tables:**
+### Tables
 
-- `stock_prices`: Daily OHLCV data (UNIQUE on stock_symbol, date)
-- `crawl_metadata`: Tracks last crawl dates for incremental updates
+- `users` - User accounts with roles
+- `stocks` - Stock master data
+- `stock_prices` - Daily OHLCV data
+- `stock_prediction_summaries` - Predicted % changes
+- `training_configs` - Saved training configurations
+- `experiment_runs` - Training run history
+- `pipeline_dags` - Airflow DAG metadata
 
-**Key queries:**
+### Migrations
 
-```sql
--- Check coverage
-SELECT stock_symbol, MIN(date), MAX(date), COUNT(*) 
-FROM stock_prices GROUP BY stock_symbol;
+```bash
+cd backend
 
--- Recent prices
-SELECT * FROM stock_prices WHERE stock_symbol = 'VCB' 
-ORDER BY date DESC LIMIT 30;
-```  
+# Generate migration
+alembic revision --autogenerate -m "description"
 
-## Testing
+# Apply migrations
+alembic upgrade head
 
-See `tests/README.md` for details.
+# Rollback
+alembic downgrade -1
+```
+
+## Requirements
+
+- Python 3.11+
+- PostgreSQL 15+
+- Redis 7+
+- 8GB RAM, 10GB disk space
+
+## Documentation
+
+- [Backend API](backend/README.md)
+- [Specifications](docs/SPECS.md)
+- [Troubleshooting](_docs/TROUBLESHOOTING.md)
 
 ## License
 
