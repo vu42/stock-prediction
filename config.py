@@ -73,7 +73,7 @@ FUTURE_DAYS = 30  # Days to predict ahead (for recursive model)
 
 # Direct Multi-Horizon Prediction
 # Each horizon gets its own dedicated model trained directly on that target
-PREDICTION_HORIZONS = [1, 3, 7]  # Days ahead to predict directly
+PREDICTION_HORIZONS = [7, 15, 30]  # Days ahead to predict directly
 
 # Scikit-learn Model Configuration
 RANDOM_FOREST_ESTIMATORS = 100

@@ -13,6 +13,7 @@
   - [2.4 End User – Stock Detail](#24-end-user--stock-detail)
   - [2.5 Data Scientist – Training](#25-data-scientist--training)
   - [2.6 Data Scientist – Pipelines](#26-data-scientist--pipelines)
+  - [2.7 Data Scientist – Models](#27-data-scientist--models)
 - [3. Role-Based Navigation](#3-role-based-navigation)
 - [4. Non-Functional UI Requirements](#4-non-functional-ui-requirements)
   - [4.1 Visual System](#41-visual-system-consistent-with-ds-pages)
@@ -47,7 +48,7 @@ Trần Hoàng Duy
 - Roles: End User, Data Scientist
 - Top nav (role-based):
   - End User: Home, Stock Detail (default landing: Home)
-  - Data Scientist: Training, Pipelines, Home, Stock Detail (default landing: Training)
+  - Data Scientist: Training, Pipelines, Models, Home, Stock Detail (default landing: Training)
 
 ## 2. Functional Requirements (UI & Behavior)
 
@@ -58,13 +59,14 @@ Trần Hoàng Duy
 - End User – Stock Detail
 - Data Scientist – Training
 - Data Scientist – Pipelines
+- Data Scientist – Models
 
 ### 2.2 Login
 
 - Goal: Role-based access and default landing.
 - Contents:
   - Username, Password, Show/Hide password
-  - Sign In button, Remember me, Forgot password link
+  - Sign In button
   - Test accounts (rendered on card):
     - End User: enduser1/pass1234, enduser2/pass1234
     - Data Scientist: ds1/pass1234, ds2/pass1234
@@ -72,18 +74,19 @@ Trần Hoàng Duy
 - States: idle, invalid credentials (error), loading (spinner on button)
 - Acceptance:
   - enduser1 → Home with Home/Stock Detail in nav
-  - ds1 → Training with Training/Pipelines/Home/Stock Detail in nav
+  - ds1 → Training with Training/Pipelines/Models/Home/Stock Detail in nav
 
 ### 2.3 End User – Home
 
 - Goal: Surface top opportunities, browse market table.
 - Top Picks (tabs):
   - Should Buy: 5 stocks with highest predicted % growth (green)
-  - Should Sell: 5 stocks with highest predicted % drop (red), i.e., predicted to fall (replacement for Watchlist)
+  - Should Sell: 5 stocks with highest predicted % drop (red), i.e., predicted to fall 
+  - My List: 5 stocks that the user has added to their list
 - Market Table:
-  - Columns: Name/Symbol, Current Price, % Change / Predicted % (1D), % Change / Predicted % (3D), % Change / Predicted % (7D), 7D sparkline
+  - Name, Symbol, Current Price, % Change 7D IRL, % Change 15D IRL, % Change 30D IRL, % Change 7D Predicted, 14D sparkline
   - Each horizon cell shows `actual / predicted`, e.g. `+3.0% / +4.2%` (actual close vs model forecast)
-  - Search, Filter (category/sector), Sort (↑%/↓%/price)
+  -Search (by symbol, name), Filter (category/sector/My list), Sort ( % change IRL: increase, decrease, % change predicted: increase, decrease, price currently)
   - Row click → Stock Detail
 - States: loading (skeleton), empty (no matches), error (retry)
 - Acceptance:
@@ -95,18 +98,19 @@ Trần Hoàng Duy
 
 - Goal: Explain current and predicted performance for a ticker.
 - Layout: 25% Predictions & Model Status, 50% Price & Forecast chart, 25% Stock Overview
-- Predictions: 3D/7D/15D/30D % change with green/red cues
-- Chart: historical vs predicted, range tabs (3D/7D/15D/30D), tooltip date/actual/predicted
+- Predictions: 7D/15D/30D % change with green/red cues
+- Chart: historical vs predicted, range tabs (7D/15D/30D), tooltip date/actual/predicted
 - Overview: company logo/name, short description, key stats (market cap, volume), links
 - Model status:
   - Status pill (e.g. Fresh/Stable/Stale) indicating recency of latest training run
   - Last updated timestamp (e.g. `2025-11-03 17:05 ICT`) with hint “From latest training run”
   - Headline accuracy metric for key horizon (e.g. `MAPE (7D): 3.2%`), colored by quality
-  - Horizon chips (3D/7D/15D/30D) each showing error %, e.g. `3D 2.9%`, `15D 3.6%`, `30D 4.8%`
+  - Horizon chips (7D/15D/30D) each showing error %, e.g. `7D 2.9%`, `15D 3.6%`, `30D 4.8%`
 - Acceptance:
   - Tabs update chart range
   - Tooltip shows actual and predicted values
   - Model status shows last updated time and accuracy metrics per horizon for the selected ticker
+
 ### 2.5 Data Scientist – Training
 
 - Goal: Configure stock universe, data window, indicators, targets, models, ensemble, and reproducibility, then validate and save the training configuration.
@@ -125,7 +129,7 @@ Trần Hoàng Duy
   - Volume: `Volume MA` (window, e.g., 20).
   - Leakage guard: toggle with helper text "enforce t-1 or earlier features".
 - Target & Splits:
-  - Horizon chips: 3d, 7d, 15d, 30d (multi-select).
+  - Horizon chips: 7d, 15d, 30d (multi-select).
   - `Lookback window` numeric input (e.g., 60).
   - `Train %` and `Test %` inputs (e.g., 80 / 20).
 - Models & Parameters:
@@ -183,11 +187,42 @@ Trần Hoàng Duy
   - Stop Active Run is only enabled while a run is in Running state and moves it to a terminal state when used.
   - Edits to schedule/timezone/catchup/max active runs/retries/owner/tags persist after Save changes and affect future runs only.
 
+### 2.7 Data Scientist – Models
+
+- Goal: Monitor trained model performance and predictions across all VN30 stocks.
+- Layout: Simple table view with essential metrics and predictions for each trained model.
+- Table columns:
+  - Ticker: Stock symbol (e.g., FPT, VCB, HPG)
+  - Last Trained: Relative time since last training (e.g., "2 days ago")
+  - MAPE 7D: Model accuracy for 7-day predictions (%)
+  - MAPE 15D: Model accuracy for 15-day predictions (%)
+  - MAPE 30D: Model accuracy for 30-day predictions (%)
+  - Pred 7D: Predicted % change for 7 days ahead
+  - Pred 15D: Predicted % change for 15 days ahead
+  - Pred 30D: Predicted % change for 30 days ahead
+  - View: Button to open evaluation plot modal
+- Color coding:
+  - MAPE values: Green (< 5%, excellent), Yellow (5-10%, acceptable), Red (> 10%, needs improvement)
+  - Predictions: Green with ↑ arrow for positive changes, Red with ↓ arrow for negative changes
+- Plot modal:
+  - Opens when user clicks View button
+  - Displays evaluation plot image from S3 showing actual vs predicted prices with metrics overlay
+  - Close button (X) and clicking outside modal closes it
+  - ESC key also closes modal
+- States: loading (table skeleton), empty (no models found), error (retry button)
+- Acceptance:
+  - Table displays all VN30 stocks with trained models
+  - MAPE values are color-coded according to performance thresholds
+  - Predictions show directional arrows and color coding
+  - Clicking View button opens modal with evaluation plot from S3
+  - Modal closes properly via X button, outside click, or ESC key
+  - Images load correctly from S3 URLs
+
 ## 3. Role-Based Navigation
 
 - After successful login:
   - End User: show Home (active), Stock Detail, hide DS pages
-  - Data Scientist: show Training (active), Pipelines, Home, Stock Detail
+  - Data Scientist: show Training (active), Pipelines, Models, Home, Stock Detail
 
 
 ## 4. Non-Functional UI Requirements
@@ -206,8 +241,8 @@ Trần Hoàng Duy
 
 ### 4.3 Test Accounts (for prototypes)
 
-- End User: enduser1/pass1234, enduser2/pass1234 → default Home
-- Data Scientist: ds1/pass1234, ds2/pass1234 → default Training
+- End User: enduser1/pass1234, enduser2/pass1234 → default Home → access to Home, Stock Detail
+- Data Scientist: ds1/pass1234, ds2/pass1234 → default Training → access to Training, Pipelines, Models, Home, Stock Detail
 
 ## 5. API Specification
 
@@ -216,44 +251,45 @@ Trần Hoàng Duy
 - Login:
   - POST /api/v1/auth/login
     - Body: { username, password }.
-    - Response: { accessToken, refreshToken, user: { id, username, role (end_user|data_scientist), displayName } }.
+    - Response: { refreshToken, user: { id, username, role (end_user|data_scientist), displayName } }.
     - Errors: 401 with { code, message } for invalid credentials.
   - GET /api/v1/auth/me
     - Purpose: restore session on refresh and drive role-based nav.
-    - Headers: Authorization: Bearer <accessToken>.
     - Response: { user: { id, username, role, displayName } }.
-  - POST /api/v1/auth/logout (optional)
-    - Purpose: invalidate refresh token / server-side session.
 
 - End User – Home:
   - GET /api/v1/stocks/top-picks
     - Purpose: power "Should Buy" and "Should Sell" tabs.
     - Query params: role=end_user, bucket=should_buy|should_sell, limit (default 5), horizonDays (default 7).
     - Response: [ { ticker, name, sector, horizonDays, predictedChangePct, currentPrice } ].
+  - GET /api/v1/stocks/my-list
+    - Purpose: power "My List" tab with the current user's saved stocks.
+    - Query params: limit (default 5), horizonDays (default 7).
+    - Response: [ { ticker, name, sector, horizonDays, predictedChangePct, currentPrice, addedAt } ].
+    - Errors: 401 for unauthenticated, 4xx/5xx with { code, message }.
   - GET /api/v1/stocks/market-table
     - Purpose: populate market table with search/filter/sort and actual vs predicted %.
-    - Query params: search (string), sector (string, optional), sortBy (change_1d|change_3d|change_7d|price), sortDir (asc|desc), page, pageSize.
+    - Query params: search (string), sector (string, optional), sortBy (change_7d|change_15d|change_30d|price), sortDir (asc|desc), page, pageSize.
     - Response:
-      - data: [ { symbol, name, sector, currentPrice, pctChange: { "1d": { actualPct, predictedPct }, "3d": { actualPct, predictedPct }, "7d": { actualPct, predictedPct } }, sparkline7d: [ { date, price } ] } ].
+      - data: [ { symbol, name, sector, currentPrice, pctChange: { "7d": { actualPct, predictedPct }, "15d": { actualPct, predictedPct }, "30d": { actualPct, predictedPct } }, sparkline14d: [ { date, price } ] } ].
       - meta: { total, page, pageSize, sectors: ["Technology", ...] }.
     - Errors: 4xx/5xx with { code, message } to support error state.
-
 - End User – Stock Detail:
   - GET /api/v1/stocks/{ticker}
     - Purpose: populate Stock Overview panel.
     - Path params: ticker (e.g., "FPT").
     - Response: { ticker, name, logoUrl, description, sector, exchange, marketCap, tradingVolume, links: { financialReportUrl, companyWebsiteUrl } }.
   - GET /api/v1/stocks/{ticker}/predictions
-    - Purpose: populate Predicted Change card (3D/7D/15D/30D).
-    - Query params: horizons=3,7,15,30 (comma-separated days).
-    - Response: { ticker, horizons: { "3": { predictedChangePct }, "7": { predictedChangePct }, "15": { predictedChangePct }, "30": { predictedChangePct } } }.
+    - Purpose: populate Predicted Change card (7D/15D/30D).
+    - Query params: horizons=7,15,30 (comma-separated days).
+    - Response: { ticker, horizons: { "7": { predictedChangePct }, "15": { predictedChangePct }, "30": { predictedChangePct } } }.
   - GET /api/v1/stocks/{ticker}/chart
     - Purpose: drive Price & Forecast chart with range tabs.
-    - Query params: range=3d|7d|15d|30d.
+    - Query params: range=7d|15d|30d.
     - Response: { points: [ { date, actualPrice, predictedPrice? } ], range }.
   - GET /api/v1/models/{ticker}/status
     - Purpose: fill Model status card (state, last updated, MAPE per horizon).
-    - Response: { state: "fresh"|"stable"|"stale", lastUpdatedAt, metrics: { "3d": { mapePct }, "7d": { mapePct }, "15d": { mapePct }, "30d": { mapePct } } }.
+    - Response: { state: "fresh"|"stable"|"stale", lastUpdatedAt, metrics: { "7d": { mapePct }, "15d": { mapePct }, "30d": { mapePct } } }.
 
 - Data Scientist – Training:
   - GET /api/v1/features/config
@@ -326,6 +362,16 @@ Trần Hoàng Duy
     - Body: { scheduleCron, timezone, catchup, maxActiveRuns, defaultArgs: { retries, retryDelayMinutes, owner, tags: [string] } }.
     - Response: updated DAG object.
 
+- Data Scientist – Models:
+  - GET /api/v1/models
+    - Purpose: populate models overview table with performance metrics and predictions.
+    - Response: [ { ticker, lastTrained, mape: { "7d": mapePct, "15d": mapePct, "30d": mapePct }, predictions: { "7d": pctChange, "15d": pctChange, "30d": pctChange }, plotUrl } ].
+    - Notes: 
+      - `lastTrained`: ISO timestamp of last training run
+      - `mape`: MAPE percentages for each horizon (color-coded: green < 5%, yellow 5-10%, red > 10%)
+      - `predictions`: predicted percentage changes for each horizon (positive/negative with arrows)
+      - `plotUrl`: S3 URL to evaluation plot image (e.g., `https://s3.amazonaws.com/bucket/FPT/FPT_evaluation.png`)
+
 ## 6. Data Model (Database Schema & ER)
 
 ### 6.1 Database Schema (overview)
@@ -369,14 +415,6 @@ CREATE TABLE users (
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE TABLE auth_tokens (
-    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token_hash      TEXT NOT NULL UNIQUE,
-    expires_at      TIMESTAMPTZ NOT NULL,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    revoked_at      TIMESTAMPTZ
-);
 
 -- Market data & stocks -----------------------------------------------------
 
@@ -580,7 +618,7 @@ CREATE INDEX idx_pipeline_run_logs_run_ts
 
 ### 6.3 ER relationships (summary)
 
-- `users` → `training_configs`, `experiment_runs`, `pipeline_runs`, `auth_tokens` (one-to-many via foreign keys).
+- `users` → `training_configs`, `experiment_runs`, `pipeline_runs`.
 - `stocks` → `stock_prices`, `stock_prediction_summaries`, `stock_prediction_points`, `model_statuses`, `experiment_ticker_artifacts`.
 - `model_statuses` → `model_horizon_metrics`.
 - `training_configs` → `experiment_runs` → `experiment_logs` and `experiment_ticker_artifacts`.
@@ -611,12 +649,12 @@ CREATE INDEX idx_pipeline_run_logs_run_ts
 ### Supporting services / infrastructure
 
 - **Authentication & RBAC**
-  - Implemented inside the backend using `users` and `auth_tokens` tables plus JWT/opaque tokens.
+  - Implemented inside the backend using `users`. 
   - Middleware enforces roles (`end_user`, `data_scientist`, `admin`) on protected endpoints (Training, Pipelines, experiments).
 - **Object Storage for Artifacts**
   - S3-compatible bucket (e.g., AWS S3 or Cloudflare R2) for model artifacts and images (`evaluation.png`, `future.png`, `model.pkl`, `scaler.pkl`, `future_predictions.csv`).
   - URLs stored in `experiment_ticker_artifacts`.
-- **Message Queue** (Optional)
+- **Message Queue**
   - Redis/RabbitMQ/Kafka queue for training jobs; prevents long-running work from blocking HTTP requests.
 - **Cache** (Optional)
   - Redis cache for read-heavy endpoints: top picks, market tables, stock detail charts, DAG catalogs.
@@ -797,13 +835,18 @@ backend/
 - Complete, working implementation of:
   - Backend API and training worker consistent with this spec and database schema.
   - Airflow DAGs for `vn30_data_crawler` and `vn30_model_training` wired to the backend/worker.
-  - React frontend implementing all screens and behaviors described here.
+  - React frontend implementing all screens and behaviors described here (Login, Home, Stock Detail, Training, Pipelines, Models).
 - Tests and tooling:
   - Automated tests (unit + integration) for critical backend paths and data pipelines.
   - CI pipeline that builds, tests, and deploys backend + worker containers.
 
 ## 10. Change Log
 
+- **v1.4** - Nov 30, 2025
+  - Added Models page specification (section 2.7) for Data Scientists.
+  - Added GET /api/v1/models endpoint to API specification.
+  - Updated navigation to include Models page for Data Scientists.
+  - Models page displays simple table with MAPE metrics, predictions, and evaluation plots from S3.
 - **v1.3**
   - Reorganized `SPECS.md` with table of contents, clearer sectioning (overview, functional, API, data model, architecture, non-functional, open questions, deliverables, change log).
   - Added explicit backend monorepo architecture and PostgreSQL schema reference.

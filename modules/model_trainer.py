@@ -172,7 +172,7 @@ def create_multi_horizon_feature_matrix(data, seq_length, horizons):
     Args:
         data: Scaled data with multiple features (n_samples, n_features)
         seq_length: Number of time steps to look back
-        horizons: List of horizons to predict, e.g. [1, 3, 7]
+        horizons: List of horizons to predict, e.g. [7, 15, 30]
 
     Returns:
         tuple: (X_features, y_targets_dict)
@@ -765,7 +765,7 @@ def train_multi_horizon_model_internal(
 
     Args:
         stock_symbol: Stock symbol to train
-        horizons: List of horizons to predict, e.g. [1, 3, 7]
+        horizons: List of horizons to predict, e.g. [7, 15, 30]
         continue_training: If True, load existing model and continue training
 
     Returns:
@@ -1422,7 +1422,7 @@ def train_multi_horizon_model(stock_symbol, horizons=None, continue_training=Non
 
     Args:
         stock_symbol: Stock symbol to train
-        horizons: List of horizons [1, 3, 7] (defaults to PREDICTION_HORIZONS)
+        horizons: List of horizons [7, 15, 30] (defaults to PREDICTION_HORIZONS)
         continue_training: If True, load existing model and continue training
 
     Returns:
