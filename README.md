@@ -47,16 +47,53 @@ stock-prediction/
 
 ### Option 1: Docker (Recommended)
 
+**Prerequisites:** Docker and Docker Compose installed.
+
 ```bash
-# Start all services
+# 1. Start all services (API, Worker, PostgreSQL, Redis, MinIO, Airflow)
 cd backend
 docker-compose -f docker/docker-compose.dev.yml up -d
 
-# Run migrations
+# 2. Run database migrations
 docker exec stock-prediction-api alembic upgrade head
 
-# Access API
+# 3. Create a test user (optional)
+docker exec stock-prediction-postgres psql -U postgres -d stock_prediction -c "
+INSERT INTO users (id, username, password_hash, display_name, role, email, is_active, created_at, updated_at)
+VALUES (gen_random_uuid(), 'admin', '\$2b\$12\$LQv3c1yqBwlVkxO/iNqH.OaGgMpJmR3u8KJgHM.qD7mP9eqVTpMGi', 'Admin User', 'data_scientist', 'admin@example.com', true, NOW(), NOW());
+"
+# Test user credentials: admin / admin123
+
+# 4. Access API documentation
 open http://localhost:8000/docs
+```
+
+**Services Started:**
+
+| Service | URL | Description |
+|---------|-----|-------------|
+| API | http://localhost:8000 | FastAPI backend |
+| API Docs | http://localhost:8000/docs | Swagger UI |
+| PostgreSQL | localhost:5432 | Database |
+| Redis | localhost:6379 | Task queue |
+| MinIO | http://localhost:9001 | S3 storage (admin: minioadmin/minioadmin) |
+| Airflow | http://localhost:8080 | DAG orchestration (admin/admin) |
+
+**Useful Commands:**
+
+```bash
+# View logs
+docker logs stock-prediction-api -f
+
+# Restart API after code changes
+docker restart stock-prediction-api
+
+# Stop all services
+docker-compose -f docker/docker-compose.dev.yml down
+
+# Reset database (warning: deletes all data)
+docker exec stock-prediction-postgres psql -U postgres -d stock_prediction -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+docker exec stock-prediction-api alembic upgrade head
 ```
 
 ### Option 2: Local Development
