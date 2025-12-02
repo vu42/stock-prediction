@@ -45,7 +45,7 @@ stock-prediction/
 
 ## Quick Start
 
-### Option 1: Docker (Recommended)
+### Docker
 
 **Prerequisites:** Docker and Docker Compose installed.
 
@@ -96,49 +96,6 @@ docker exec stock-prediction-postgres psql -U postgres -d stock_prediction -c "D
 docker exec stock-prediction-api alembic upgrade head
 ```
 
-### Option 2: Local Development
-
-```bash
-# 1. Setup backend
-cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-
-# 2. Start dependencies
-docker-compose -f docker/docker-compose.dev.yml up -d postgres redis minio
-
-# 3. Configure
-cp env.example .env
-# Edit .env with your settings
-
-# 4. Run migrations
-alembic upgrade head
-
-# 5. Start API
-uvicorn app.main:app --reload
-
-# 6. Start worker (another terminal)
-python -m worker.main
-```
-
-### Option 3: Local Training (Without API)
-
-Train models directly using the legacy modules:
-
-```bash
-# Activate environment
-source venv/bin/activate
-
-# Initialize database
-python init_db.py
-
-# Train specific stocks
-python train_local.py VCB FPT VNM
-
-# Train all VN30 stocks
-python train_local.py --all
-```
 
 ## API Endpoints
 
