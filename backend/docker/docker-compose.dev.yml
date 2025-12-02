@@ -67,6 +67,7 @@ services:
       - "8000:8000"
     volumes:
       - ../src:/app/src
+      - ../scripts:/app/scripts
       - ../../output:/app/output
     depends_on:
       postgres:

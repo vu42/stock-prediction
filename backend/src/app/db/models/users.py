@@ -75,6 +75,11 @@ class User(Base, TimestampMixin):
         back_populates="owner",
         foreign_keys="ExperimentRun.owner_user_id",
     )
+    saved_stocks: Mapped[list["UserSavedStock"]] = relationship(
+        "UserSavedStock",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, username={self.username}, role={self.role})>"
@@ -132,4 +137,5 @@ class AuthToken(Base):
 
 
 # Forward references for relationships (resolved at runtime)
+from app.db.models.stocks import UserSavedStock  # noqa: E402, F401
 from app.db.models.training import ExperimentRun, TrainingConfig  # noqa: E402, F401

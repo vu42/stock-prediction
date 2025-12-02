@@ -60,11 +60,19 @@ docker exec stock-prediction-api alembic upgrade head
 # 3. Create a test user (optional)
 docker exec stock-prediction-postgres psql -U postgres -d stock_prediction -c "
 INSERT INTO users (id, username, password_hash, display_name, role, email, is_active, created_at, updated_at)
-VALUES (gen_random_uuid(), 'admin', '\$2b\$12\$LQv3c1yqBwlVkxO/iNqH.OaGgMpJmR3u8KJgHM.qD7mP9eqVTpMGi', 'Admin User', 'data_scientist', 'admin@example.com', true, NOW(), NOW());
+VALUES 
+    (gen_random_uuid(), 'admin', '\$2b\$12\$LQv3c1yqBwlVkxO/iNqH.OaGgMpJmR3u8KJgHM.qD7mP9eqVTpMGi', 'Admin User', 'data_scientist', 'admin@example.com', true, NOW(), NOW()),
+    (gen_random_uuid(), 'enduser1', '\$2b\$12\$ovIPTyXDwvQ10D5cA64ZBux.omXHLtMaBD4dJsAf6jEnLODRg8KPe', 'End User 1', 'end_user', 'enduser1@example.com', true, NOW(), NOW()),
+    (gen_random_uuid(), 'enduser2', '\$2b\$12\$ovIPTyXDwvQ10D5cA64ZBux.omXHLtMaBD4dJsAf6jEnLODRg8KPe', 'End User 2', 'end_user', 'enduser2@example.com', true, NOW(), NOW());
 "
 # Test user credentials: admin / admin123
 
-# 4. Access API documentation
+# 4. Seed VN30 stocks (optional)
+# Note: Restart the API container if you just added the scripts directory
+docker restart stock-prediction-api
+docker exec stock-prediction-api python -m scripts.seed_stocks
+
+# 5. Access API documentation
 open http://localhost:8000/docs
 ```
 

@@ -114,6 +114,21 @@ class TopPickResponse(BaseModel):
         populate_by_name = True
 
 
+class MyListResponse(BaseModel):
+    """My List (user saved stocks) response schema."""
+
+    ticker: str
+    name: str
+    sector: str | None = None
+    horizon_days: int = Field(..., alias="horizonDays")
+    predicted_change_pct: float = Field(..., alias="predictedChangePct")
+    current_price: float | None = Field(None, alias="currentPrice")
+    added_at: str = Field(..., alias="addedAt")  # ISO timestamp
+
+    class Config:
+        populate_by_name = True
+
+
 class StockCreate(BaseModel):
     """Stock creation schema."""
 

@@ -42,6 +42,7 @@ from app.schemas.stocks import (
     MarketTableItemResponse,
     MarketTableMetaResponse,
     MarketTableResponse,
+    MyListResponse,
     PctChangeResponse,
     SparklinePoint,
     StockCreate,
@@ -97,6 +98,7 @@ __all__ = [
     "MarketTableResponse",
     "SparklinePoint",
     "TopPickResponse",
+    "MyListResponse",
     "StockCreate",
     "StockUpdate",
     # Predictions
