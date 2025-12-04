@@ -51,9 +51,9 @@ async def get_top_stock_picks(
 
 @router.get("/my-list", response_model=list[MyListResponse])
 async def get_my_list(
+    current_user: CurrentUser,
     limit: int = Query(5, ge=1, le=20),
     horizon_days: int = Query(7, alias="horizonDays"),
-    current_user: CurrentUser = Depends(),
     db: Session = Depends(get_db),
 ):
     """
@@ -75,7 +75,7 @@ async def get_my_list(
 @router.post("/my-list/{ticker}", status_code=status.HTTP_201_CREATED)
 async def add_stock_to_my_list(
     ticker: str,
-    current_user: CurrentUser = Depends(),
+    current_user: CurrentUser,
     db: Session = Depends(get_db),
 ):
     """
@@ -113,7 +113,7 @@ async def add_stock_to_my_list(
 @router.delete("/my-list/{ticker}", status_code=status.HTTP_200_OK)
 async def remove_stock_from_my_list(
     ticker: str,
-    current_user: CurrentUser = Depends(),
+    current_user: CurrentUser,
     db: Session = Depends(get_db),
 ):
     """
@@ -153,7 +153,7 @@ async def get_market_table(
     sort_by: str = Query("change_7d", alias="sortBy"),
     sort_dir: str = Query("desc", regex="^(asc|desc)$", alias="sortDir"),
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100, alias="pageSize"),
+    page_size: int = Query(10, ge=1, le=100, alias="pageSize"),
     db: Session = Depends(get_db),
 ):
     """
@@ -161,7 +161,7 @@ async def get_market_table(
     
     - **search**: Search string for ticker/name
     - **sector**: Filter by sector
-    - **sortBy**: Sort column (change_1d, change_3d, change_7d, price)
+    - **sortBy**: Sort column (change_7d, change_15d, change_30d, price)
     - **sortDir**: Sort direction (asc, desc)
     - **page**: Page number
     - **pageSize**: Items per page

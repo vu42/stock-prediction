@@ -54,7 +54,8 @@ class PctChangeResponse(BaseModel):
     """Percent change response schema."""
 
     actual_pct: float | None = Field(None, alias="actualPct")
-    predicted_pct: float | None = Field(None, alias="predictedPct")
+    # predicted_pct: float | None = Field(None, alias="predictedPct")
+    actual_price: float | None = Field(None, alias="actualPrice")
 
     class Config:
         populate_by_name = True
@@ -68,7 +69,7 @@ class MarketTableItemResponse(BaseModel):
     sector: str | None = None
     current_price: float | None = Field(None, alias="currentPrice")
     pct_change: dict[str, PctChangeResponse] = Field(default_factory=dict, alias="pctChange")
-    sparkline_7d: list["SparklinePoint"] = Field(default_factory=list, alias="sparkline7d")
+    sparkline_14d: list["SparklinePoint"] = Field(default_factory=list, alias="sparkline14d")
 
     class Config:
         populate_by_name = True

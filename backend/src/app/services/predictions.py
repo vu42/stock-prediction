@@ -139,7 +139,7 @@ def get_market_table_data(
         db: Database session
         search: Search string for ticker/name
         sector: Filter by sector
-        sort_by: Sort column (change_1d, change_3d, change_7d, price)
+        sort_by: Sort column (change_7d, change_15d, change_30d, price)
         sort_dir: Sort direction (asc, desc)
         page: Page number
         page_size: Items per page
@@ -175,7 +175,7 @@ def get_market_table_data(
     for stock in stocks:
         current_price = get_current_price(db, stock.ticker)
         pct_change = get_pct_changes(db, stock.id)
-        sparkline = get_sparkline_data(db, stock.id, days=7)
+        sparkline = get_sparkline_data(db, stock.id, days=14)
         
         data.append({
             "symbol": stock.ticker,
@@ -183,14 +183,14 @@ def get_market_table_data(
             "sector": stock.sector,
             "currentPrice": current_price,
             "pctChange": pct_change,
-            "sparkline7d": sparkline,
+            "sparkline14d": sparkline,
         })
     
     # Sort (in-memory for now, could optimize with DB sorting)
     sort_key_map = {
-        "change_1d": lambda x: x["pctChange"]["1d"]["predictedPct"] or 0,
-        "change_3d": lambda x: x["pctChange"]["3d"]["predictedPct"] or 0,
-        "change_7d": lambda x: x["pctChange"]["7d"]["predictedPct"] or 0,
+        "change_7d": lambda x: x["pctChange"]["7d"]["actualPct"] or x["pctChange"]["7d"]["predictedPct"] or 0,
+        "change_15d": lambda x: x["pctChange"]["15d"]["actualPct"] or x["pctChange"]["15d"]["predictedPct"] or 0,
+        "change_30d": lambda x: x["pctChange"]["30d"]["actualPct"] or x["pctChange"]["30d"]["predictedPct"] or 0,
         "price": lambda x: x["currentPrice"] or 0,
     }
     if sort_by in sort_key_map:
@@ -209,41 +209,45 @@ def get_market_table_data(
 
 def get_pct_changes(db: Session, stock_id: int) -> dict[str, dict[str, float | None]]:
     """
-    Get actual and predicted % changes for 1d, 3d, 7d horizons.
+    Get actual and predicted % changes for 7d, 15d, 30d horizons.
+    Also returns actual price at each horizon point for display as "percentage / price".
     
     Args:
         db: Database session
         stock_id: Stock ID
         
     Returns:
-        Dict with horizon keys and actualPct/predictedPct values
+        Dict with horizon keys and actualPct/predictedPct/actualPrice values
     """
     result = {
-        "1d": {"actualPct": None, "predictedPct": None},
-        "3d": {"actualPct": None, "predictedPct": None},
-        "7d": {"actualPct": None, "predictedPct": None},
+        "7d": {"actualPct": None, "actualPrice": None},
+        "15d": {"actualPct": None, "actualPrice": None},
+        "30d": {"actualPct": None, "actualPrice": None},
     }
     
-    # Get recent prices for actual % calculation
+    # Get recent prices for actual % calculation (need up to 30 days back)
     prices_stmt = (
         select(StockPrice.price_date, StockPrice.close_price)
         .where(StockPrice.stock_id == stock_id)
         .order_by(StockPrice.price_date.desc())
-        .limit(8)  # Need up to 7 days back + today
+        .limit(31)  # Need up to 30 days back + today
     )
     prices = db.execute(prices_stmt).all()
     
     if len(prices) >= 2:
         current = float(prices[0].close_price)
         
-        # Calculate actual % changes
-        for horizon, key in [(1, "1d"), (3, "3d"), (7, "7d")]:
+        # Calculate actual % changes and actual prices for 7d, 15d, 30d
+        for horizon, key in [(7, "7d"), (15, "15d"), (30, "30d")]:
             if len(prices) > horizon:
-                past = float(prices[horizon].close_price)
-                result[key]["actualPct"] = round((current - past) / past * 100, 2)
+                past_price = float(prices[horizon].close_price)
+                # Calculate % change: (current - past) / past * 100
+                result[key]["actualPct"] = round((current - past_price) / past_price * 100, 2)
+                # Store the actual price at that horizon point (past price)
+                result[key]["actualPrice"] = round(past_price, 4)
     
     # Get predicted % from summaries
-    for horizon_days, key in [(1, "1d"), (3, "3d"), (7, "7d")]:
+    for horizon_days, key in [(7, "7d"), (15, "15d"), (30, "30d")]:
         pred_stmt = (
             select(StockPredictionSummary.predicted_change_pct)
             .where(
@@ -344,7 +348,8 @@ def get_stock_predictions(
 def get_chart_data(
     db: Session,
     ticker: str,
-    range_param: str = "7d",
+    historical_range: str = "30d",
+    prediction_range: str = "7d",
 ) -> dict[str, Any]:
     """
     Get historical and predicted price data for chart.
@@ -352,42 +357,66 @@ def get_chart_data(
     Args:
         db: Database session
         ticker: Stock ticker
-        range_param: Range (3d, 7d, 15d, 30d)
+        historical_range: Historical data range (15d, 30d, 60d, 90d)
+        prediction_range: Prediction horizon range (7d, 15d, 30d)
         
     Returns:
-        Dict with points array and range
+        Dict with points array, historicalRange, and predictionRange
     """
-    # Parse range
-    days_map = {"3d": 3, "7d": 7, "15d": 15, "30d": 30}
-    days = days_map.get(range_param, 7)
+    # Parse ranges
+    historical_days_map = {"15d": 15, "30d": 30, "60d": 60, "90d": 90}
+    prediction_days_map = {"7d": 7, "15d": 15, "30d": 30}
+    
+    historical_days = historical_days_map.get(historical_range, 30)
+    prediction_days = prediction_days_map.get(prediction_range, 7)
     
     # Get stock
     stock_stmt = select(Stock).where(Stock.ticker == ticker)
     stock = db.execute(stock_stmt).scalar_one_or_none()
     
     if not stock:
-        return {"points": [], "range": range_param}
+        return {
+            "points": [],
+            "historicalRange": historical_range,
+            "predictionRange": prediction_range,
+        }
     
-    # Get historical prices
+    # Get historical prices for the historical_range
     price_stmt = (
         select(StockPrice.price_date, StockPrice.close_price)
         .where(StockPrice.stock_id == stock.id)
         .order_by(StockPrice.price_date.desc())
-        .limit(days * 2)  # Get more for context
+        .limit(historical_days)
     )
     prices = db.execute(price_stmt).all()
     
-    # Get prediction points
+    if not prices:
+        return {
+            "points": [],
+            "historicalRange": historical_range,
+            "predictionRange": prediction_range,
+        }
+    
+    # Get the latest historical price date (this is where predictions should start)
+    latest_price_date = max(p.price_date for p in prices)
+    
+    # Calculate the date range for predictions (from latest_price_date + 1 day, up to prediction_days ahead)
+    prediction_start_date = latest_price_date + timedelta(days=1)
+    prediction_end_date = latest_price_date + timedelta(days=prediction_days)
+    
+    # Get prediction points for the prediction_range horizon
+    # Predictions should be for future dates starting from the latest historical date
     pred_stmt = (
         select(StockPredictionPoint.prediction_date, StockPredictionPoint.predicted_price)
         .where(
             and_(
                 StockPredictionPoint.stock_id == stock.id,
-                StockPredictionPoint.horizon_days == days,
+                StockPredictionPoint.horizon_days == prediction_days,
+                StockPredictionPoint.prediction_date >= prediction_start_date,
+                StockPredictionPoint.prediction_date <= prediction_end_date,
             )
         )
-        .order_by(StockPredictionPoint.prediction_date.desc())
-        .limit(days)
+        .order_by(StockPredictionPoint.prediction_date.asc())
     )
     predictions = db.execute(pred_stmt).all()
     
@@ -395,14 +424,27 @@ def get_chart_data(
     points = []
     pred_dict = {p.prediction_date: float(p.predicted_price) for p in predictions}
     
+    # Add historical prices (oldest first)
     for p in reversed(prices):
         points.append({
             "date": p.price_date.isoformat(),
             "actualPrice": float(p.close_price),
-            "predictedPrice": pred_dict.get(p.price_date),
+            "predictedPrice": None,  # Historical dates don't have predictions
         })
     
-    return {"points": points[-days:], "range": range_param}
+    # Add prediction points for future dates
+    for pred_date in sorted(pred_dict.keys()):
+        points.append({
+            "date": pred_date.isoformat(),
+            "actualPrice": None,  # Future dates don't have actual prices yet
+            "predictedPrice": pred_dict[pred_date],
+        })
+    
+    return {
+        "points": points,
+        "historicalRange": historical_range,
+        "predictionRange": prediction_range,
+    }
 
 
 def get_model_status(db: Session, ticker: str) -> dict[str, Any]:
