@@ -142,7 +142,7 @@ def run_training_experiment(run_id: str) -> dict:
                 
                 # Step 4: Predict future
                 log_to_experiment(db, run_id, "INFO", f"[{stock_symbol}] Generating predictions...")
-                predict_future_prices(db, stock_symbol)
+                predict_future_prices(db, stock_symbol, run_id=run_id)
                 
                 # Step 5: Upload artifacts to S3 (optional)
                 artifact_urls = upload_artifacts(db, run_id, stock_symbol)

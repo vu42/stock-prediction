@@ -26,7 +26,11 @@ import matplotlib.pyplot as plt
 
 from app.core.config import settings
 from app.core.logging import get_logger
+from app.db.models import Stock, StockPredictionPoint, StockPredictionSummary
 from app.services.data_fetcher import load_stock_data_from_db
+
+# Standard horizons for prediction summaries
+PREDICTION_HORIZONS = [3, 7, 15, 30]
 
 logger = get_logger(__name__)
 
@@ -475,6 +479,7 @@ def predict_future_prices(
     db: Session,
     stock_symbol: str,
     days_ahead: int | None = None,
+    run_id: str | None = None,
 ) -> bool:
     """
     Predict future stock prices using ensemble.
@@ -483,6 +488,7 @@ def predict_future_prices(
         db: Database session
         stock_symbol: Stock symbol to predict
         days_ahead: Number of days to predict
+        run_id: Optional experiment run ID to link predictions
         
     Returns:
         True if successful
@@ -552,6 +558,67 @@ def predict_future_prices(
         # Save predictions
         predictions_df.to_csv(paths["future_csv"], index=False)
         logger.info(f"[{stock_symbol}] Predictions saved to {paths['future_csv']}")
+        
+        # Insert prediction summaries into database for API
+        current_price = float(df["close"].iloc[-1])
+        as_of_date = last_date.date()
+        
+        # Get stock from database
+        from sqlalchemy import select
+        stock_stmt = select(Stock).where(Stock.ticker == stock_symbol)
+        stock = db.execute(stock_stmt).scalar_one_or_none()
+        
+        if stock:
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+            from uuid import UUID as PyUUID
+            
+            # Save prediction summaries (aggregated % change for key horizons)
+            for horizon in PREDICTION_HORIZONS:
+                if horizon <= days_ahead:
+                    # Get predicted price for this horizon (0-indexed, so horizon-1)
+                    pred_price = float(predicted_prices[horizon - 1])
+                    pct_change = ((pred_price - current_price) / current_price) * 100
+                    
+                    # Upsert prediction summary
+                    stmt = pg_insert(StockPredictionSummary).values(
+                        stock_id=stock.id,
+                        as_of_date=as_of_date,
+                        horizon_days=horizon,
+                        predicted_change_pct=round(pct_change, 4),
+                        experiment_run_id=PyUUID(run_id) if run_id else None,
+                    ).on_conflict_do_update(
+                        constraint="uq_pred_summary",
+                        set_={
+                            "predicted_change_pct": round(pct_change, 4),
+                            "experiment_run_id": PyUUID(run_id) if run_id else None,
+                        },
+                    )
+                    db.execute(stmt)
+            
+            db.commit()
+            logger.info(f"[{stock_symbol}] Prediction summaries saved to database")
+            
+            # Save prediction points (per-day forecast for chart overlay)
+            # We save points for the full horizon (days_ahead days)
+            for i, (pred_date, pred_price) in enumerate(zip(future_dates, predicted_prices)):
+                day_offset = i + 1  # 1-indexed day offset
+                
+                stmt = pg_insert(StockPredictionPoint).values(
+                    stock_id=stock.id,
+                    experiment_run_id=PyUUID(run_id) if run_id else None,
+                    horizon_days=day_offset,
+                    prediction_date=pred_date.date() if hasattr(pred_date, "date") else pred_date,
+                    predicted_price=round(float(pred_price), 4),
+                ).on_conflict_do_update(
+                    constraint="uq_pred_point",
+                    set_={
+                        "predicted_price": round(float(pred_price), 4),
+                    },
+                )
+                db.execute(stmt)
+            
+            db.commit()
+            logger.info(f"[{stock_symbol}] {len(predicted_prices)} prediction points saved to database")
         
         # Create visualization
         fig, ax = plt.subplots(figsize=(14, 7))
