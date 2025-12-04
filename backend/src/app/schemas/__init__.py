@@ -75,6 +75,7 @@ from app.schemas.training import (
     TrainingConfigCreate,
     TrainingConfigResponse,
     TrainingConfigSchema,
+    ValidateConfigRequest,
     ValidateConfigResponse,
     ValidationBlocker,
 )
@@ -122,6 +123,7 @@ __all__ = [
     "TrainingConfigCreate",
     "TrainingConfigResponse",
     "ConfigSavedResponse",
+    "ValidateConfigRequest",
     "ValidationBlocker",
     "RunPreview",
     "ValidateConfigResponse",

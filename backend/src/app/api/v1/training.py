@@ -25,6 +25,7 @@ from app.schemas import (
     TrainingConfigCreate,
     TrainingConfigResponse,
     TrainingConfigSchema,
+    ValidateConfigRequest,
     ValidateConfigResponse,
     ValidationBlocker,
 )
@@ -126,17 +127,39 @@ async def save_training_config(
 
 @router.post("/features/validate", response_model=ValidateConfigResponse)
 async def validate_training_config(
-    request: TrainingConfigSchema,
+    request: ValidateConfigRequest,
     current_user: CurrentUser,
+    db: Session = Depends(get_db),
 ):
     """
     Validate config and compute a rough run preview / cost estimate.
+    Accepts either a config object or { configId } to validate a saved config.
     """
     blockers: list[ValidationBlocker] = []
     warnings: list[ValidationBlocker] = []
 
+    # Get config from request or by configId
+    config: TrainingConfigSchema | None = request.config
+    
+    if request.config_id:
+        # Load config by ID
+        stmt = select(TrainingConfig).where(TrainingConfig.id == request.config_id)
+        db_config = db.execute(stmt).scalar_one_or_none()
+        if not db_config:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Configuration not found: {request.config_id}",
+            )
+        config = TrainingConfigSchema(**db_config.config)
+    
+    if not config:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Either 'config' object or 'configId' must be provided",
+        )
+
     # Validate stock universe
-    if not request.universe.use_all_vn30 and not request.universe.tickers:
+    if not config.universe.use_all_vn30 and not config.universe.tickers:
         blockers.append(
             ValidationBlocker(
                 fieldPath="universe.tickers",
@@ -145,8 +168,8 @@ async def validate_training_config(
         )
 
     # Validate data window
-    if request.data_window.mode == "last_n_days":
-        if not request.data_window.last_n_days or request.data_window.last_n_days < 60:
+    if config.data_window.mode == "last_n_days":
+        if not config.data_window.last_n_days or config.data_window.last_n_days < 60:
             blockers.append(
                 ValidationBlocker(
                     fieldPath="dataWindow.lastNDays",
@@ -155,7 +178,7 @@ async def validate_training_config(
             )
 
     # Validate horizons
-    if not request.targets.horizons:
+    if not config.targets.horizons:
         blockers.append(
             ValidationBlocker(
                 fieldPath="targets.horizons",
@@ -164,7 +187,7 @@ async def validate_training_config(
         )
 
     # Validate train/test split
-    if request.targets.train_pct + request.targets.test_pct != 100:
+    if config.targets.train_pct + config.targets.test_pct != 100:
         blockers.append(
             ValidationBlocker(
                 fieldPath="targets.trainPct",
@@ -173,7 +196,7 @@ async def validate_training_config(
         )
 
     # Warnings
-    if request.scaling.method == "none" and request.models.svr.enabled:
+    if config.scaling.method == "none" and config.models.svr.enabled:
         warnings.append(
             ValidationBlocker(
                 fieldPath="scaling.method",
@@ -182,7 +205,7 @@ async def validate_training_config(
         )
 
     # Estimate runtime
-    num_tickers = 30 if request.universe.use_all_vn30 else len(request.universe.tickers)
+    num_tickers = 30 if config.universe.use_all_vn30 else len(config.universe.tickers)
     est_minutes = num_tickers * 2  # ~2 minutes per ticker
 
     return ValidateConfigResponse(
