@@ -5,6 +5,7 @@ Stock API endpoints.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.errors import NotFoundError
 from app.core.security import CurrentUser
 from app.db.session import get_db
 from app.services.stock_service import get_stock_by_ticker
@@ -103,6 +104,11 @@ async def add_stock_to_my_list(
             "ticker": stock.ticker,
             "name": stock.name,
         }
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e.message),
+        )
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -125,25 +131,31 @@ async def remove_stock_from_my_list(
     Returns:
         Success message
     """
-    # Get stock by ticker
-    stock = get_stock_by_ticker(db, ticker)
-    
-    # Remove from user's list
-    removed = remove_stock_from_list(
-        db,
-        user_id=str(current_user.id),
-        stock_id=stock.id,
-    )
-    
-    if not removed:
+    try:
+        # Get stock by ticker
+        stock = get_stock_by_ticker(db, ticker)
+        
+        # Remove from user's list
+        removed = remove_stock_from_list(
+            db,
+            user_id=str(current_user.id),
+            stock_id=stock.id,
+        )
+        
+        if not removed:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Stock {ticker} is not in your list",
+            )
+        
+        return {
+            "message": f"Stock {ticker} removed from your list",
+        }
+    except NotFoundError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Stock {ticker} is not in your list",
+            detail=str(e.message),
         )
-    
-    return {
-        "message": f"Stock {ticker} removed from your list",
-    }
 
 
 @router.get("/market-table", response_model=MarketTableResponse)

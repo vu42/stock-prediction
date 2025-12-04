@@ -188,9 +188,9 @@ def get_market_table_data(
     
     # Sort (in-memory for now, could optimize with DB sorting)
     sort_key_map = {
-        "change_7d": lambda x: x["pctChange"]["7d"]["actualPct"] or x["pctChange"]["7d"]["predictedPct"] or 0,
-        "change_15d": lambda x: x["pctChange"]["15d"]["actualPct"] or x["pctChange"]["15d"]["predictedPct"] or 0,
-        "change_30d": lambda x: x["pctChange"]["30d"]["actualPct"] or x["pctChange"]["30d"]["predictedPct"] or 0,
+        "change_7d": lambda x: x["pctChange"]["7d"].get("actualPct") or 0,
+        "change_15d": lambda x: x["pctChange"]["15d"].get("actualPct") or 0,
+        "change_30d": lambda x: x["pctChange"]["30d"].get("actualPct") or 0,
         "price": lambda x: x["currentPrice"] or 0,
     }
     if sort_by in sort_key_map:
@@ -209,15 +209,17 @@ def get_market_table_data(
 
 def get_pct_changes(db: Session, stock_id: int) -> dict[str, dict[str, float | None]]:
     """
-    Get actual and predicted % changes for 7d, 15d, 30d horizons.
-    Also returns actual price at each horizon point for display as "percentage / price".
+    Get actual % changes and actual prices for 7d, 15d, 30d horizons.
+    Returns data formatted for display as "percentage / price" in market table cells.
     
     Args:
         db: Database session
         stock_id: Stock ID
         
     Returns:
-        Dict with horizon keys and actualPct/predictedPct/actualPrice values
+        Dict with horizon keys ("7d", "15d", "30d") and values containing:
+        - actualPct: Actual percentage change from past price to current
+        - actualPrice: Actual price at the horizon point (past price)
     """
     result = {
         "7d": {"actualPct": None, "actualPrice": None},
@@ -246,22 +248,8 @@ def get_pct_changes(db: Session, stock_id: int) -> dict[str, dict[str, float | N
                 # Store the actual price at that horizon point (past price)
                 result[key]["actualPrice"] = round(past_price, 4)
     
-    # Get predicted % from summaries
-    for horizon_days, key in [(7, "7d"), (15, "15d"), (30, "30d")]:
-        pred_stmt = (
-            select(StockPredictionSummary.predicted_change_pct)
-            .where(
-                and_(
-                    StockPredictionSummary.stock_id == stock_id,
-                    StockPredictionSummary.horizon_days == horizon_days,
-                )
-            )
-            .order_by(StockPredictionSummary.as_of_date.desc())
-            .limit(1)
-        )
-        pred = db.execute(pred_stmt).scalar_one_or_none()
-        if pred:
-            result[key]["predictedPct"] = float(pred)
+    # Note: predictedPct is no longer included in the response schema
+    # The schema only includes actualPct and actualPrice for display as "percentage / price"
     
     return result
 
