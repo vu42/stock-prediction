@@ -61,6 +61,16 @@ class PctChangeResponse(BaseModel):
         populate_by_name = True
 
 
+class PredictedPctChangeResponse(BaseModel):
+    """Predicted percent change response schema."""
+
+    predicted_pct: float | None = Field(None, alias="predictedPct")
+    predicted_price: float | None = Field(None, alias="predictedPrice")
+
+    class Config:
+        populate_by_name = True
+
+
 class MarketTableItemResponse(BaseModel):
     """Market table row response schema."""
 
@@ -69,6 +79,9 @@ class MarketTableItemResponse(BaseModel):
     sector: str | None = None
     current_price: float | None = Field(None, alias="currentPrice")
     pct_change: dict[str, PctChangeResponse] = Field(default_factory=dict, alias="pctChange")
+    predicted_pct_change: dict[str, PredictedPctChangeResponse] = Field(
+        default_factory=dict, alias="predictedPctChange"
+    )
     sparkline_14d: list["SparklinePoint"] = Field(default_factory=list, alias="sparkline14d")
 
     class Config:
@@ -80,6 +93,10 @@ class SparklinePoint(BaseModel):
 
     date: str
     price: float
+    is_predicted: bool = Field(False, alias="isPredicted")
+
+    class Config:
+        populate_by_name = True
 
 
 class MarketTableMetaResponse(BaseModel):

@@ -1,16 +1,23 @@
 """
 Script to seed mock prediction summaries for all stocks.
 Run with: docker exec stock-prediction-api python -m scripts.seed_mock_predictions
+
+Note: Mocks predictions for all symbols from scripts.constant VN30_STOCKS list.
 """
 
 from datetime import date, timedelta
 from decimal import Decimal
 import random
 
+from scripts.constant import VN30_STOCKS
+
 from sqlalchemy import select, and_
 
 from app.db.models import Stock, StockPredictionSummary, StockPrice
 from app.db.session import SessionLocal
+
+# Use all symbols from scripts.constant VN30_STOCKS
+MOCK_SYMBOLS = VN30_STOCKS
 
 # Horizons to generate predictions for
 HORIZONS = [7, 15, 30]
@@ -52,19 +59,25 @@ def generate_mock_prediction(
 
 def seed_mock_predictions():
     """
-    Seed mock prediction summaries for all active stocks.
+    Seed mock prediction summaries for stocks.
+    Only processes stocks that match the mocked symbols from scripts.constant.
     """
     db = SessionLocal()
     try:
-        # Get all active stocks
-        stmt = select(Stock).where(Stock.is_active == True).order_by(Stock.ticker)  # noqa: E712
+        # Get only stocks that match our mocked symbols
+        stmt = select(Stock).where(
+            Stock.is_active == True,  # noqa: E712
+            Stock.ticker.in_([s.upper() for s in MOCK_SYMBOLS])
+        ).order_by(Stock.ticker)
         all_stocks = db.execute(stmt).scalars().all()
         
         if not all_stocks:
-            print("⚠️  No active stocks found. Please run seed_stocks.py first.")
+            print("⚠️  No matching stocks found. Please run seed_stocks.py first.")
+            print(f"   Expected symbols: {', '.join(MOCK_SYMBOLS)}")
             return
         
-        print(f"📊 Found {len(all_stocks)} active stocks. Generating prediction summaries...\n")
+        print(f"📊 Found {len(all_stocks)} stocks matching mocked symbols. Generating prediction summaries...\n")
+        print(f"   Mocked symbols: {', '.join(MOCK_SYMBOLS)}\n")
         
         # Use today as the as_of_date for all predictions
         as_of_date = date.today()

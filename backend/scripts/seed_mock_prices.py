@@ -1,18 +1,25 @@
 """
 Script to seed mock price data for all stocks in the database.
 Run with: docker exec stock-prediction-api python -m scripts.seed_mock_prices
+
+Note: Mocks prices for all symbols from scripts.constant VN30_STOCKS list.
 """
 
 from datetime import date, timedelta
 from decimal import Decimal
 import random
 
+from scripts.constant import VN30_STOCKS
+
 from sqlalchemy import select
 
 from app.db.models import Stock, StockPrice
 from app.db.session import SessionLocal
 
-# Base prices for common VN30 stocks (in VND, thousands)
+# Use all symbols from scripts.constant VN30_STOCKS
+MOCK_SYMBOLS = VN30_STOCKS
+
+# Base prices for the mocked symbols (in VND, thousands)
 # If a stock is not in this list, a default price will be used
 BASE_PRICES = {
     "FPT": 125000.0,   # ~125k VND
@@ -20,29 +27,9 @@ BASE_PRICES = {
     "VNM": 85000.0,    # ~85k VND
     "HPG": 28000.0,    # ~28k VND
     "VIC": 75000.0,    # ~75k VND
-    "GAS": 95000.0,    # ~95k VND
-    "MSN": 78000.0,    # ~78k VND
-    "TCB": 45000.0,    # ~45k VND
-    "ACB": 25000.0,    # ~25k VND
-    "BID": 55000.0,    # ~55k VND
-    "BVH": 45000.0,    # ~45k VND
-    "CTG": 30000.0,    # ~30k VND
-    "HDB": 28000.0,    # ~28k VND
-    "MBB": 22000.0,    # ~22k VND
-    "MWG": 65000.0,    # ~65k VND
-    "PLX": 60000.0,    # ~60k VND
-    "POW": 15000.0,    # ~15k VND
-    "SAB": 180000.0,   # ~180k VND
-    "SSI": 35000.0,    # ~35k VND
-    "STB": 20000.0,    # ~20k VND
-    "TPB": 25000.0,    # ~25k VND
     "VHM": 65000.0,    # ~65k VND
-    "VJC": 80000.0,    # ~80k VND
-    "VPB": 35000.0,    # ~35k VND
-    "VRE": 28000.0,    # ~28k VND
-    "VSH": 50000.0,    # ~50k VND
-    "VTI": 15000.0,    # ~15k VND
-    "VTO": 12000.0,    # ~12k VND
+    "MSN": 78000.0,    # ~78k VND
+    "SAB": 180000.0,   # ~180k VND
 }
 
 
@@ -84,22 +71,28 @@ def generate_mock_price(base_price: float, date_offset: int, volatility: float =
 
 def seed_mock_prices(days_back: int = 60):
     """
-    Seed mock price data for all active stocks in the database.
+    Seed mock price data for stocks in the database.
+    Only processes stocks that match the mocked symbols from scripts.constant.
     
     Args:
         days_back: Number of days of historical data to generate (default 60)
     """
     db = SessionLocal()
     try:
-        # Get all active stocks from database
-        stmt = select(Stock).where(Stock.is_active == True).order_by(Stock.ticker)  # noqa: E712
+        # Get only stocks that match our mocked symbols
+        stmt = select(Stock).where(
+            Stock.is_active == True,  # noqa: E712
+            Stock.ticker.in_([s.upper() for s in MOCK_SYMBOLS])
+        ).order_by(Stock.ticker)
         all_stocks = db.execute(stmt).scalars().all()
         
         if not all_stocks:
-            print("⚠️  No active stocks found. Please run seed_stocks.py first.")
+            print("⚠️  No matching stocks found. Please run seed_stocks.py first.")
+            print(f"   Expected symbols: {', '.join(MOCK_SYMBOLS)}")
             return
         
-        print(f"📊 Found {len(all_stocks)} active stocks. Generating price data...\n")
+        print(f"📊 Found {len(all_stocks)} stocks matching mocked symbols. Generating price data...\n")
+        print(f"   Mocked symbols: {', '.join(MOCK_SYMBOLS)}\n")
         
         today = date.today()
         total_inserted = 0

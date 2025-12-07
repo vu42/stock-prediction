@@ -67,10 +67,18 @@ VALUES
 "
 # Test user credentials: admin / admin123
 
+# 3.1. Saved Stocks
+docker exec stock-prediction-api alembic revision --autogenerate -m "add_user_saved_stocks_table" 
+
+docker exec stock-prediction-api alembic upgrade head
+
 # 4. Seed VN30 stocks (optional)
-# Note: Restart the API container if you just added the scripts directory
 docker restart stock-prediction-api
+docker exec stock-prediction-api python -m scripts.seed_users
 docker exec stock-prediction-api python -m scripts.seed_stocks
+docker exec stock-prediction-api python -m scripts.seed_mock_prices
+docker exec stock-prediction-api python -m scripts.seed_mock_predictions
+docker exec stock-prediction-api python -m scripts.seed_mock_prediction_points
 
 # 5. Access API documentation
 open http://localhost:8000/docs

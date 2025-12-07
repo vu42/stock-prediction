@@ -175,6 +175,7 @@ def get_market_table_data(
     for stock in stocks:
         current_price = get_current_price(db, stock.ticker)
         pct_change = get_pct_changes(db, stock.id)
+        predicted_pct_change = get_predicted_pct_changes(db, stock.id, current_price=current_price)
         sparkline = get_sparkline_data(db, stock.id, days=14)
         
         data.append({
@@ -183,6 +184,7 @@ def get_market_table_data(
             "sector": stock.sector,
             "currentPrice": current_price,
             "pctChange": pct_change,
+            "predictedPctChange": predicted_pct_change,
             "sparkline14d": sparkline,
         })
     
@@ -254,35 +256,143 @@ def get_pct_changes(db: Session, stock_id: int) -> dict[str, dict[str, float | N
     return result
 
 
-def get_sparkline_data(
+def get_predicted_pct_changes(
     db: Session,
     stock_id: int,
-    days: int = 7,
-) -> list[dict[str, Any]]:
+    current_price: float | None = None,
+) -> dict[str, dict[str, float | None]]:
     """
-    Get sparkline price data for the last N days.
+    Get predicted % changes and predicted prices for 7d, 15d, 30d horizons.
     
     Args:
         db: Database session
         stock_id: Stock ID
-        days: Number of days
+        current_price: Current stock price (if None, will be fetched)
         
     Returns:
-        List of {date, price} dicts
+        Dict with horizon keys ("7d", "15d", "30d") and values containing:
+        - predictedPct: Predicted percentage change
+        - predictedPrice: Predicted price (calculated from current price + predicted %)
     """
-    stmt = (
+    result = {
+        "7d": {"predictedPct": None, "predictedPrice": None},
+        "15d": {"predictedPct": None, "predictedPrice": None},
+        "30d": {"predictedPct": None, "predictedPrice": None},
+    }
+    
+    # Get current price if not provided
+    if current_price is None:
+        price_stmt = (
+            select(StockPrice.close_price)
+            .where(StockPrice.stock_id == stock_id)
+            .order_by(StockPrice.price_date.desc())
+            .limit(1)
+        )
+        latest_price = db.execute(price_stmt).scalar_one_or_none()
+        if latest_price:
+            current_price = float(latest_price)
+    
+    if current_price is None:
+        return result
+    
+    # Get predicted % changes from summaries (latest for each horizon)
+    for horizon_days, key in [(7, "7d"), (15, "15d"), (30, "30d")]:
+        pred_stmt = (
+            select(StockPredictionSummary.predicted_change_pct)
+            .where(
+                and_(
+                    StockPredictionSummary.stock_id == stock_id,
+                    StockPredictionSummary.horizon_days == horizon_days,
+                )
+            )
+            .order_by(StockPredictionSummary.as_of_date.desc())
+            .limit(1)
+        )
+        pred = db.execute(pred_stmt).scalar_one_or_none()
+        
+        if pred:
+            predicted_pct = float(pred)
+            result[key]["predictedPct"] = round(predicted_pct, 2)
+            # Calculate predicted price: current_price * (1 + predicted_pct / 100)
+            predicted_price = current_price * (1 + predicted_pct / 100)
+            result[key]["predictedPrice"] = round(predicted_price, 4)
+    
+    return result
+
+
+def get_sparkline_data(
+    db: Session,
+    stock_id: int,
+    days: int = 14,
+) -> list[dict[str, Any]]:
+    """
+    Get sparkline price data combining historical and predicted prices.
+    For 14-day sparkline: 7 days historical + 7 days predicted.
+    
+    Args:
+        db: Database session
+        stock_id: Stock ID
+        days: Total number of days (default 14 for sparkline14d)
+        
+    Returns:
+        List of {date, price, isPredicted} dicts
+    """
+    from datetime import date as date_type, timedelta
+    
+    # For 14-day sparkline: 7 days historical + 7 days predicted
+    historical_days = days // 2  # 7 days
+    prediction_days = days // 2  # 7 days
+    
+    # Get historical prices (last 7 days)
+    historical_stmt = (
         select(StockPrice.price_date, StockPrice.close_price)
         .where(StockPrice.stock_id == stock_id)
         .order_by(StockPrice.price_date.desc())
-        .limit(days)
+        .limit(historical_days)
     )
-    results = db.execute(stmt).all()
+    historical_results = db.execute(historical_stmt).all()
     
-    # Reverse to chronological order
-    return [
-        {"date": r.price_date.isoformat(), "price": float(r.close_price)}
-        for r in reversed(results)
-    ]
+    sparkline_points = []
+    
+    # Add historical points (oldest first)
+    for r in reversed(historical_results):
+        sparkline_points.append({
+            "date": r.price_date.isoformat(),
+            "price": float(r.close_price),
+            "isPredicted": False,
+        })
+    
+    # Get latest historical date to start predictions from
+    if historical_results:
+        latest_historical_date = max(r.price_date for r in historical_results)
+        prediction_start_date = latest_historical_date + timedelta(days=1)
+        prediction_end_date = latest_historical_date + timedelta(days=prediction_days)
+        
+        # Get predicted prices for 7-day horizon (future dates)
+        pred_stmt = (
+            select(StockPredictionPoint.prediction_date, StockPredictionPoint.predicted_price)
+            .where(
+                and_(
+                    StockPredictionPoint.stock_id == stock_id,
+                    StockPredictionPoint.horizon_days == prediction_days,  # 7-day horizon
+                    StockPredictionPoint.prediction_date >= prediction_start_date,
+                    StockPredictionPoint.prediction_date <= prediction_end_date,
+                )
+            )
+            .order_by(StockPredictionPoint.prediction_date.asc())
+            .limit(prediction_days)
+        )
+        prediction_results = db.execute(pred_stmt).all()
+        
+        # Add predicted points
+        for r in prediction_results:
+            sparkline_points.append({
+                "date": r.prediction_date.isoformat(),
+                "price": float(r.predicted_price),
+                "isPredicted": True,
+            })
+    
+    return sparkline_points
 
 
 def get_stock_predictions(

@@ -2,7 +2,11 @@
 Script to seed the database with VN30 stocks.
 Run with: docker exec stock-prediction-api python -m scripts.seed_stocks
 Or rebuild the container first if scripts directory was just added.
+
+Note: Mocks all symbols from scripts.constant VN30_STOCKS list.
 """
+
+from scripts.constant import VN30_STOCKS
 
 from sqlalchemy import select
 
@@ -10,48 +14,35 @@ from app.db.models import Stock
 from app.db.session import SessionLocal
 from app.services.stock_service import create_stock, update_stock
 
-# VN30 stocks with their full names and sectors
-VN30_STOCKS = [
-    {"ticker": "ACB", "name": "Asia Commercial Bank", "sector": "Financial Services"},
-    {"ticker": "BID", "name": "Bank for Investment and Development of Vietnam", "sector": "Financial Services"},
-    {"ticker": "BVH", "name": "Bao Viet Holdings", "sector": "Insurance"},
-    {"ticker": "CTG", "name": "VietinBank", "sector": "Financial Services"},
-    {"ticker": "FPT", "name": "FPT Corporation", "sector": "Technology"},
-    {"ticker": "GAS", "name": "PetroVietnam Gas", "sector": "Energy"},
-    {"ticker": "HDB", "name": "HDBank", "sector": "Financial Services"},
-    {"ticker": "HPG", "name": "Hoa Phat Group", "sector": "Industrial"},
-    {"ticker": "MBB", "name": "Military Bank", "sector": "Financial Services"},
-    {"ticker": "MSN", "name": "Masan Group", "sector": "Consumer Goods"},
-    {"ticker": "MWG", "name": "Mobile World Investment Corporation", "sector": "Retail"},
-    {"ticker": "PLX", "name": "Petrolimex", "sector": "Energy"},
-    {"ticker": "POW", "name": "PetroVietnam Power Corporation", "sector": "Energy"},
-    {"ticker": "SAB", "name": "Sabeco", "sector": "Consumer Goods"},
-    {"ticker": "SSI", "name": "Saigon Securities Inc.", "sector": "Financial Services"},
-    {"ticker": "STB", "name": "Sacombank", "sector": "Financial Services"},
-    {"ticker": "TCB", "name": "Techcombank", "sector": "Financial Services"},
-    {"ticker": "TPB", "name": "TPBank", "sector": "Financial Services"},
-    {"ticker": "VCB", "name": "Vietcombank", "sector": "Financial Services"},
-    {"ticker": "VHM", "name": "Vinhomes", "sector": "Real Estate"},
-    {"ticker": "VIC", "name": "Vingroup", "sector": "Real Estate"},
-    {"ticker": "VJC", "name": "VietJet Air", "sector": "Airlines"},
-    {"ticker": "VNM", "name": "Vinamilk", "sector": "Consumer Goods"},
-    {"ticker": "VPB", "name": "VPBank", "sector": "Financial Services"},
-    {"ticker": "VRE", "name": "Vincom Retail", "sector": "Real Estate"},
-    {"ticker": "VSH", "name": "Vietnam Dairy Products", "sector": "Consumer Goods"},
-    {"ticker": "VTI", "name": "Viettel Global Investment", "sector": "Technology"},
-    {"ticker": "VTO", "name": "Viettel Post", "sector": "Logistics"},
-]
+# Stock metadata mapping
+STOCK_METADATA = {
+    "FPT": {"name": "FPT Corporation", "sector": "Technology"},
+    "VCB": {"name": "Vietcombank", "sector": "Financial Services"},
+    "VNM": {"name": "Vinamilk", "sector": "Consumer Goods"},
+    "HPG": {"name": "Hoa Phat Group", "sector": "Industrial"},
+    "VIC": {"name": "Vingroup", "sector": "Real Estate"},
+    "VHM": {"name": "Vinhomes", "sector": "Real Estate"},
+    "MSN": {"name": "Masan Group", "sector": "Consumer Goods"},
+    "SAB": {"name": "Sabeco", "sector": "Consumer Goods"},
+}
+
+# Use all symbols from scripts.constant VN30_STOCKS
+MOCK_SYMBOLS = VN30_STOCKS
 
 
 def seed_stocks():
-    """Seed the database with VN30 stocks."""
+    """Seed the database with all mock symbols from scripts.constant VN30_STOCKS."""
     db = SessionLocal()
     try:
         created_count = 0
         updated_count = 0
         
-        for stock_data in VN30_STOCKS:
-            ticker = stock_data["ticker"]
+        for ticker in MOCK_SYMBOLS:
+            if ticker not in STOCK_METADATA:
+                print(f"⚠️  Skipping {ticker}: No metadata found")
+                continue
+                
+            stock_info = STOCK_METADATA[ticker]
             
             # Check if stock already exists
             stmt = select(Stock).where(Stock.ticker == ticker.upper())
@@ -62,31 +53,31 @@ def seed_stocks():
                 update_stock(
                     db,
                     ticker=ticker,
-                    name=stock_data["name"],
-                    sector=stock_data["sector"],
+                    name=stock_info["name"],
+                    sector=stock_info["sector"],
                     exchange="HOSE",
-                    description=f"{stock_data['name']} is a leading company in the {stock_data['sector']} sector.",
+                    description=f"{stock_info['name']} is a leading company in the {stock_info['sector']} sector.",
                     is_active=True,
                 )
                 updated_count += 1
-                print(f"✓ Updated: {ticker} - {stock_data['name']}")
+                print(f"✓ Updated: {ticker} - {stock_info['name']}")
             else:
                 # Create new stock
                 create_stock(
                     db,
                     ticker=ticker,
-                    name=stock_data["name"],
-                    sector=stock_data["sector"],
+                    name=stock_info["name"],
+                    sector=stock_info["sector"],
                     exchange="HOSE",
-                    description=f"{stock_data['name']} is a leading company in the {stock_data['sector']} sector.",
+                    description=f"{stock_info['name']} is a leading company in the {stock_info['sector']} sector.",
                 )
                 created_count += 1
-                print(f"✓ Created: {ticker} - {stock_data['name']}")
+                print(f"✓ Created: {ticker} - {stock_info['name']}")
         
         print(f"\n✅ Seeding complete!")
         print(f"   Created: {created_count} stocks")
         print(f"   Updated: {updated_count} stocks")
-        print(f"   Total: {len(VN30_STOCKS)} stocks")
+        print(f"   Total: {len(MOCK_SYMBOLS)} stocks (mocked from scripts.constant VN30_STOCKS)")
         
     except Exception as e:
         print(f"❌ Error seeding stocks: {e}")
