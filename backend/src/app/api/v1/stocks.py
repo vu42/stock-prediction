@@ -162,7 +162,11 @@ async def remove_stock_from_my_list(
 async def get_market_table(
     search: str | None = Query(None),
     sector: str | None = Query(None),
-    sort_by: str = Query("change_7d", alias="sortBy"),
+    sort_by: str = Query(
+        "change_7d",
+        alias="sortBy",
+        regex="^(change_7d|change_15d|change_30d|price|predicted_change_7d)$",
+    ),
     sort_dir: str = Query("desc", regex="^(asc|desc)$", alias="sortDir"),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100, alias="pageSize"),
@@ -172,11 +176,11 @@ async def get_market_table(
     Get market table data with search, filter, sort, and pagination.
     
     - **search**: Search string for ticker/name
-    - **sector**: Filter by sector
-    - **sortBy**: Sort column (change_7d, change_15d, change_30d, price)
+    - **sector**: Filter by sector (optional)
+    - **sortBy**: Sort column (change_7d, change_15d, change_30d, price, predicted_change_7d)
     - **sortDir**: Sort direction (asc, desc)
-    - **page**: Page number
-    - **pageSize**: Items per page
+    - **page**: Page number (default: 1)
+    - **pageSize**: Items per page (default: 10, max: 100)
     """
     result = get_market_table_data(
         db,

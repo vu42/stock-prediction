@@ -284,9 +284,9 @@ Trần Hoàng Duy
     - Errors: 401 for unauthenticated, 4xx/5xx with { code, message }.
   - GET /api/v1/stocks/market-table
     - Purpose: populate market table with search/filter/sort and actual vs predicted %.
-    - Query params: search (string), sector (string, optional), sortBy (change_7d|change_15d|change_30d|price), sortDir (asc|desc), page, pageSize.
+    - Query params: search (string), sector (string, optional), sortBy (change_7d|change_15d|change_30d|price|predicted_change_7d), sortDir (asc|desc), page, pageSize.
     - Response:
-      - data: [ { symbol, name, sector, currentPrice, pctChange: { "7d": { actualPct, actualPrice }, "15d": { actualPct, actualPrice }, "30d": { actualPct, actualPrice } }, sparkline14d: [ { date, price, isPredicted } ] } ].
+      - data: [ { symbol, name, sector, currentPrice, pctChange: { "7d": { actualPct, actualPrice }, "15d": { actualPct, actualPrice }, "30d": { actualPct, actualPrice } }, predictedPctChange: {"7d": {predictedPct, predicedtPrice}}, sparkline14d: [ { date, price, isPredicted } ] } ].
       - meta: { total, page, pageSize, sectors: ["Technology", ...] }.
     - Errors: 4xx/5xx with { code, message } to support error state.
 - End User – Stock Detail:

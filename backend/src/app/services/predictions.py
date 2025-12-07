@@ -193,6 +193,7 @@ def get_market_table_data(
         "change_7d": lambda x: x["pctChange"]["7d"].get("actualPct") or 0,
         "change_15d": lambda x: x["pctChange"]["15d"].get("actualPct") or 0,
         "change_30d": lambda x: x["pctChange"]["30d"].get("actualPct") or 0,
+        "predicted_change_7d": lambda x: x["predictedPctChange"]["7d"].get("predictedPct") or 0,
         "price": lambda x: x["currentPrice"] or 0,
     }
     if sort_by in sort_key_map:
@@ -262,7 +263,7 @@ def get_predicted_pct_changes(
     current_price: float | None = None,
 ) -> dict[str, dict[str, float | None]]:
     """
-    Get predicted % changes and predicted prices for 7d, 15d, 30d horizons.
+    Get predicted % changes and predicted prices for 7d horizon from prediction summaries.
     
     Args:
         db: Database session
@@ -270,14 +271,12 @@ def get_predicted_pct_changes(
         current_price: Current stock price (if None, will be fetched)
         
     Returns:
-        Dict with horizon keys ("7d", "15d", "30d") and values containing:
-        - predictedPct: Predicted percentage change
+        Dict with horizon keys ("7d") and values containing:
+        - predictedPct: Predicted percentage change (from StockPredictionSummary)
         - predictedPrice: Predicted price (calculated from current price + predicted %)
     """
     result = {
         "7d": {"predictedPct": None, "predictedPrice": None},
-        "15d": {"predictedPct": None, "predictedPrice": None},
-        "30d": {"predictedPct": None, "predictedPrice": None},
     }
     
     # Get current price if not provided
@@ -295,27 +294,27 @@ def get_predicted_pct_changes(
     if current_price is None:
         return result
     
-    # Get predicted % changes from summaries (latest for each horizon)
-    for horizon_days, key in [(7, "7d"), (15, "15d"), (30, "30d")]:
-        pred_stmt = (
-            select(StockPredictionSummary.predicted_change_pct)
-            .where(
-                and_(
-                    StockPredictionSummary.stock_id == stock_id,
-                    StockPredictionSummary.horizon_days == horizon_days,
-                )
+    # Get predicted % change from summaries (latest for 7d horizon)
+    horizon_days = 7
+    pred_stmt = (
+        select(StockPredictionSummary.predicted_change_pct)
+        .where(
+            and_(
+                StockPredictionSummary.stock_id == stock_id,
+                StockPredictionSummary.horizon_days == horizon_days,
             )
-            .order_by(StockPredictionSummary.as_of_date.desc())
-            .limit(1)
         )
-        pred = db.execute(pred_stmt).scalar_one_or_none()
-        
-        if pred:
-            predicted_pct = float(pred)
-            result[key]["predictedPct"] = round(predicted_pct, 2)
-            # Calculate predicted price: current_price * (1 + predicted_pct / 100)
-            predicted_price = current_price * (1 + predicted_pct / 100)
-            result[key]["predictedPrice"] = round(predicted_price, 4)
+        .order_by(StockPredictionSummary.as_of_date.desc())
+        .limit(1)
+    )
+    pred = db.execute(pred_stmt).scalar_one_or_none()
+    
+    if pred:
+        predicted_pct = float(pred)
+        result["7d"]["predictedPct"] = round(predicted_pct, 2)
+        # Calculate predicted price: current_price * (1 + predicted_pct / 100)
+        predicted_price = current_price * (1 + predicted_pct / 100)
+        result["7d"]["predictedPrice"] = round(predicted_price, 4)
     
     return result
 

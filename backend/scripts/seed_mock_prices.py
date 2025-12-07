@@ -95,6 +95,7 @@ def seed_mock_prices(days_back: int = 60):
         print(f"   Mocked symbols: {', '.join(MOCK_SYMBOLS)}\n")
         
         today = date.today()
+        print(f"Today: {today}")
         total_inserted = 0
         
         for stock in all_stocks:
