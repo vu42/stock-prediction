@@ -48,11 +48,11 @@ Here is a revised version of **1.3 Definitions, acronyms, and abbreviations** th
 
 * **Data Scientist**: A user who configures features, runs training experiments, monitors pipelines, and inspects model performance.
 
-* **Horizon**: Prediction offset in days, for example 7, 15, or 30 days from a reference time (t).
+* **Horizon**: Prediction offset in days, for example 7, 15, or 30 days from a reference time $t$.
 
-* **Feature vector (\mathbf{x}_t)**: A vector containing technical indicators and historical price information at time (t).
+* **Feature vector $\mathbf{x}_t$**: A vector containing technical indicators and historical price information at time $t$.
 
-* **Target (y_{t+h})**: Percentage change in closing price from day (t) to day (t+h) for horizon (h).
+* **Target $y_{t+h}$**: Percentage change in closing price from day $t$ to day $t+h$ for horizon $h$.
 
 * **Experiment**: A training run that uses a specific configuration (index, indicators, horizons, models, ensemble strategy) and produces metrics and artifacts.
 
@@ -531,28 +531,28 @@ This section summarizes key API groups and how they support the user flows and r
 
 ## 6.1 Prediction problem formulation
 
-For each stock ticker and prediction horizon (h \in {7, 15, 30}), the system models the percentage change in closing price (h) days into the future.
+For each stock ticker and prediction horizon $h \in \{7, 15, 30\}$, the system models the percentage change in closing price $h$ days into the future.
 
-Let (P_t) denote the closing price of a given stock at trading day (t). For a chosen horizon (h), the target is defined as
+Let $P_t$ denote the closing price of a given stock at trading day $t$. For a chosen horizon $h$, the target is defined as
 
-[
+$$
 y_{t+h} = \frac{P_{t+h} - P_t}{P_t} \times 100
-]
+$$
 
-expressed as a percentage change between day (t) and day (t+h).
+expressed as a percentage change between day $t$ and day $t+h$.
 
-The feature vector (\mathbf{x}_t) at time (t) includes, for a fixed lookback window:
+The feature vector $\mathbf{x}_t$ at time $t$ includes, for a fixed lookback window:
 
 * Raw prices such as open, high, low, close, and volume over recent days.
 * Derived technical indicators computed from the historical window, including but not limited to: simple and exponential moving averages (SMA, EMA), Relative Strength Index (RSI), Moving Average Convergence Divergence (MACD), Bollinger Bands, Average True Range (ATR), and volume moving averages.
 
-For each horizon (h), the prediction problem is to learn a function (f_h) such that
+For each horizon $h$, the prediction problem is to learn a function $f_h$ such that
 
-[
+$$
 \hat{y}_{t+h} = f_h(\mathbf{x}_t)
-]
+$$
 
-approximates the true target (y_{t+h}) for all valid time indices (t). Given a dataset of pairs ({(\mathbf{x}*t, y*{t+h})}_{t=1}^{N_h}) constructed from historical data, the models described below are trained to minimize suitable loss functions over this dataset.
+approximates the true target $y_{t+h}$ for all valid time indices $t$. Given a dataset of pairs $\{(\mathbf{x}_t, y_{t+h})\}_{t=1}^{N_h}$ constructed from historical data, the models described below are trained to minimize suitable loss functions over this dataset.
 
 ## 6.2 Selected models and their mathematics
 
@@ -564,66 +564,65 @@ Ridge regression is a linear regression model with L2 regularization that assume
 
 The prediction function has the form
 
-[
+$$
 \hat{y} = \mathbf{w}^\top \mathbf{x} + b
-]
+$$
 
-where (\mathbf{w}) is the weight vector and (b) is the bias term.
+where $\mathbf{w}$ is the weight vector and $b$ is the bias term.
 
-Given training examples ((\mathbf{x}_i, y_i)) for (i = 1,\dots,N), ridge regression solves
+Given training examples $(\mathbf{x}_i, y_i)$ for $i = 1,\dots,N$, ridge regression solves
 
-[
+$$
 \min_{\mathbf{w}, b} \frac{1}{N} \sum_{i=1}^N (y_i - \mathbf{w}^\top \mathbf{x}_i - b)^2 + \lambda \lVert \mathbf{w} \rVert_2^2
-]
+$$
 
-where (\lambda \ge 0) is the regularization parameter.
+where $\lambda \ge 0$ is the regularization parameter.
 
- The regularization term (\lambda \lVert \mathbf{w} \rVert_2^2) discourages large weights, which helps control variance and reduces overfitting, especially when features are correlated or the feature dimension is large relative to the number of training examples.
+ The regularization term $\lambda \lVert \mathbf{w} \rVert_2^2$ discourages large weights, which helps control variance and reduces overfitting, especially when features are correlated or the feature dimension is large relative to the number of training examples.
 
 ### 6.2.2 Support Vector Regression (SVR with RBF kernel)
 
-Support Vector Regression aims to find a function that deviates from the targets by at most (\epsilon) for as many training points as possible, while maintaining a flat function in feature space.
+Support Vector Regression aims to find a function that deviates from the targets by at most $\epsilon$ for as many training points as possible, while maintaining a flat function in feature space.
 
 Conceptually, SVR solves an optimization problem of the form
 
-[
+$$
 \min_{\mathbf{w}, b, \xi_i, \xi_i^*}
 \frac{1}{2} \lVert \mathbf{w} \rVert^2
-
-* C \sum_{i=1}^N (\xi_i + \xi_i^*)
-  ]
++ C \sum_{i=1}^N (\xi_i + \xi_i^*)
+$$
 
 subject to
 
-[
+$$
 \begin{aligned}
-y_i - (\mathbf{w}^\top \phi(\mathbf{x}_i) + b) &\le \epsilon + \xi_i \
-(\mathbf{w}^\top \phi(\mathbf{x}_i) + b) - y_i &\le \epsilon + \xi_i^* \
+y_i - (\mathbf{w}^\top \phi(\mathbf{x}_i) + b) &\le \epsilon + \xi_i \\
+(\mathbf{w}^\top \phi(\mathbf{x}_i) + b) - y_i &\le \epsilon + \xi_i^* \\
 \xi_i, \xi_i^* &\ge 0
 \end{aligned}
-]
+$$
 
-where (\phi(\cdot)) is a mapping to a feature space, (C > 0) is a regularization parameter controlling the trade off between flatness and allowed deviations, and (\epsilon \ge 0) defines the width of the (\epsilon) insensitive band around the regression function.
+where $\phi(\cdot)$ is a mapping to a feature space, $C > 0$ is a regularization parameter controlling the trade off between flatness and allowed deviations, and $\epsilon \ge 0$ defines the width of the $\epsilon$ insensitive band around the regression function.
 
 Using the kernel trick, SVR with RBF kernel uses
 
-[
+$$
 K(\mathbf{x}_i, \mathbf{x}_j) = \exp(-\gamma \lVert \mathbf{x}_i - \mathbf{x}_j \rVert^2)
-]
+$$
 
 to define similarity between data points.
 
- Parameter (\gamma > 0) controls the effective width of the kernel; smaller values lead to smoother functions that vary slowly with (\mathbf{x}), while larger values allow more complex, localized fits around individual training points.
+ Parameter $\gamma > 0$ controls the effective width of the kernel; smaller values lead to smoother functions that vary slowly with $\mathbf{x}$, while larger values allow more complex, localized fits around individual training points.
 
 ### 6.2.3 Random Forest Regression
 
 Random forest regression is an ensemble of decision trees trained on bootstrap samples of the training data with feature subsampling at each split.
 
-Let (h_t(\mathbf{x})) denote the prediction of tree (t) for (t = 1,\dots,T). The random forest prediction is
+Let $h_t(\mathbf{x})$ denote the prediction of tree $t$ for $t = 1,\dots,T$. The random forest prediction is
 
-[
+$$
 \hat{y}(\mathbf{x}) = \frac{1}{T} \sum_{t=1}^T h_t(\mathbf{x})
-]
+$$
 
  Each tree is trained on a bootstrap resample of the training data and, at each split, considers a random subset of features, which encourages diversity among trees; averaging across trees reduces variance and often improves generalization compared to a single tree.
 
@@ -631,15 +630,15 @@ Let (h_t(\mathbf{x})) denote the prediction of tree (t) for (t = 1,\dots,T). The
 
 Gradient boosting builds an additive model by sequentially adding decision trees that correct errors of the current model.
 
-Let (F_m(\mathbf{x})) denote the model after (m) iterations. The general form is
+Let $F_m(\mathbf{x})$ denote the model after $m$ iterations. The general form is
 
-[
-F_M(\mathbf{x}) = \sum_{m=1}^M \nu , h_m(\mathbf{x})
-]
+$$
+F_M(\mathbf{x}) = \sum_{m=1}^M \nu \, h_m(\mathbf{x})
+$$
 
-where (h_m) is the tree added at iteration (m), (M) is the number of boosting stages, and (0 < \nu \le 1) is the learning rate that scales each tree’s contribution.
+where $h_m$ is the tree added at iteration $m$, $M$ is the number of boosting stages, and $0 < \nu \le 1$ is the learning rate that scales each tree's contribution.
 
- At each iteration, a new tree is fitted to approximate the negative gradient of the loss function with respect to the current model predictions; for squared error loss, this gradient reduces to residuals (y_i - F_{m-1}(\mathbf{x}_i)).
+ At each iteration, a new tree is fitted to approximate the negative gradient of the loss function with respect to the current model predictions; for squared error loss, this gradient reduces to residuals $y_i - F_{m-1}(\mathbf{x}_i)$.
 
 ## 6.3 Data preprocessing and splitting
 
@@ -648,11 +647,11 @@ where (h_m) is the tree added at iteration (m), (M) is the number of boosting st
 * Lookback window construction
 
   * For each ticker, time ordered daily prices and volumes are collected from `stock_prices`.
-  * For each time index (t) where sufficient history exists, a feature vector (\mathbf{x}_t) is constructed using raw prices and technical indicators computed over the lookback window.
+  * For each time index $t$ where sufficient history exists, a feature vector $\mathbf{x}_t$ is constructed using raw prices and technical indicators computed over the lookback window.
 
 * Target alignment
 
-  * For each horizon (h), the target (y_{t+h}) is computed using prices at times (t) and (t+h), as defined in Section 6.1.
+  * For each horizon $h$, the target $y_{t+h}$ is computed using prices at times $t$ and $t+h$, as defined in Section 6.1.
   * Feature vectors without valid future prices are excluded from training for that horizon.
 
 * Train and test split strategy
@@ -666,29 +665,29 @@ where (h_m) is the tree added at iteration (m), (M) is the number of boosting st
 ## 6.4 Ensemble strategies
 
 
-For each horizon (h), the system can combine predictions from multiple models (for example ridge regression, SVR, random forest, gradient boosting) into an ensemble prediction.
+For each horizon $h$, the system can combine predictions from multiple models (for example ridge regression, SVR, random forest, gradient boosting) into an ensemble prediction.
 
-Let $\hat{y}_{h,k}$ denote the prediction of model (k) for horizon (h). A simple weighted ensemble prediction is
+Let $\hat{y}_{h,k}$ denote the prediction of model $k$ for horizon $h$. A simple weighted ensemble prediction is
 
-[
-\hat{y}*h = \sum_k w*{h,k} \hat{y}_{h,k}
-]
+$$
+\hat{y}_h = \sum_k w_{h,k} \hat{y}_{h,k}
+$$
 
 with weights satisfying
 
-[
+$$
 \sum_k w_{h,k} = 1, \quad w_{h,k} \ge 0.
-]
+$$
 
  Weights may be chosen based on validation performance such as inverse MAPE on a validation set, so that models with better historical accuracy receive higher weight in the ensemble. Mean ensemble corresponds to equal weights; median ensemble corresponds to taking the median rather than a weighted sum.
 
 ## 6.5 Evaluation metrics (MAPE for 7D, 15D, 30D)
 
-For a given horizon and a set of (N) test examples with targets (y_i) and predictions (\hat{y}_i), the Mean Absolute Percentage Error (MAPE) is defined as
+For a given horizon and a set of $N$ test examples with targets $y_i$ and predictions $\hat{y}_i$, the Mean Absolute Percentage Error (MAPE) is defined as
 
-[
-\text{MAPE} = \frac{100%}{N} \sum_{i=1}^N \left| \frac{y_i - \hat{y}_i}{y_i} \right|.
-]
+$$
+\text{MAPE} = \frac{100\%}{N} \sum_{i=1}^N \left| \frac{y_i - \hat{y}_i}{y_i} \right|.
+$$
 
 MAPE is computed separately for each horizon (7D, 15D, 30D) and stored per ticker and model in `model_horizon_metrics`.
 
@@ -700,14 +699,14 @@ The Models page displays these values in columns labeled MAPE 7D, MAPE 15D, and 
 
 The mathematical quantities defined above are directly reflected in the UI in several ways.
 
-* Predicted percentage change (\hat{y}_h)
+* Predicted percentage change $\hat{y}_h$
 
-  * For each horizon (h \in {7, 15, 30}), the ensemble prediction (\hat{y}_h) is displayed as Pred 7D, Pred 15D, and Pred 30D in the Models table, and as horizon specific predicted changes on Stock Detail and Home.
-  * The sign of (\hat{y}_h) determines arrow direction and color: positive values produce upward arrows and green color, while negative values produce downward arrows and red color.
+  * For each horizon $h \in \{7, 15, 30\}$, the ensemble prediction $\hat{y}_h$ is displayed as Pred 7D, Pred 15D, and Pred 30D in the Models table, and as horizon specific predicted changes on Stock Detail and Home.
+  * The sign of $\hat{y}_h$ determines arrow direction and color: positive values produce upward arrows and green color, while negative values produce downward arrows and red color.
 
 * Actual versus predicted comparison
 
-  * Evaluation plots per ticker display time series of actual prices alongside model predictions, which are derived from (\hat{y}_{t+h}) values applied cumulatively over time.
+  * Evaluation plots per ticker display time series of actual prices alongside model predictions, which are derived from $\hat{y}_{t+h}$ values applied cumulatively over time.
   * These plots provide a visual representation of model fit consistent with the numerical metrics in the Models table.
 
 * MAPE driven quality indicators
