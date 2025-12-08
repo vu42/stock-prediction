@@ -50,9 +50,9 @@ Here is a revised version of **1.3 Definitions, acronyms, and abbreviations** th
 
 * **Horizon**: Prediction offset in days, for example 7, 15, or 30 days from a reference time $t$.
 
-* **Feature vector $\mathbf{x}_t$**: A vector containing technical indicators and historical price information at time $t$.
+* **Feature vector $\mathbf{x}_t$:** A vector containing technical indicators and historical price information at time $t$.
 
-* **Target $y_{t+h}$**: Percentage change in closing price from day $t$ to day $t+h$ for horizon $h$.
+* **Target $y_{t+h}$:** Percentage change in closing price from day $t$ to day $t+h$ for horizon $h$.
 
 * **Experiment**: A training run that uses a specific configuration (index, indicators, horizons, models, ensemble strategy) and produces metrics and artifacts.
 
