@@ -642,8 +642,6 @@ where $h_m$ is the tree added at iteration $m$, $M$ is the number of boosting st
 
 ## 6.3 Data preprocessing and splitting
 
-
-
 * Lookback window construction
 
   * For each ticker, time ordered daily prices and volumes are collected from `stock_prices`.
@@ -661,6 +659,12 @@ where $h_m$ is the tree added at iteration $m$, $M$ is the number of boosting st
 * Standardization and scaling
 
   * For models sensitive to feature scales, such as ridge regression and SVR, features are standardized using statistics computed on the training set (for example mean and standard deviation per feature) and the same transformation is applied to test data.
+
+![Machine learning pipeline data flow](/docs/diagrams/ml-pineline.png)
+
+Figure 6.1 Machine learning pipeline data flow
+
+This diagram summarizes the end to end data flow of the machine learning pipeline. Historical price data for the selected VN30 subset is first transformed into time ordered feature vectors using a fixed lookback window and a set of technical indicators. The data is then split into training and validation segments that respect time order and used to build per horizon datasets for 7, 15, and 30 day targets. For each horizon, multiple models such as ridge regression, SVR with RBF kernel, random forest, and gradient boosting are trained and produce per model predictions. These predictions are combined by an ensemble module, evaluated using MAPE on the validation set, and the resulting predictions, metrics, and plots are written to the database and object storage. Finally, the backend API exposes this information to the frontend, which renders the Home, Stock Detail, and Models pages.
 
 ## 6.4 Ensemble strategies
 
