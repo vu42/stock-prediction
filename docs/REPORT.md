@@ -459,6 +459,12 @@ The system architecture includes the following components.
 
   * Serve as system of record for all relational data and as storage for evaluation plots, model pickles, and future predictions.
 
+![High level architecture of the stock prediction system](/docs/diagrams/system-architecture.png)
+Figure 4.1 High level architecture of the stock prediction system
+
+This diagram shows the main components of the stock prediction system and how they interact. End users and data scientists access the system through a browser that loads the single page frontend application. The frontend communicates with a backend API service over HTTP and JSON, which centralizes all business logic, authentication, model and prediction queries, and pipeline control. The backend reads and writes relational data in PostgreSQL, stores plots and model artifacts in object storage, and proxies requests to Airflow for VN30 data crawling and training pipelines. Training jobs are enqueued by the backend and executed by a separate training worker, which builds features, trains per horizon models, computes metrics, and writes predictions and artifacts back to the database and storage. The frontend then uses the API to render the Login, Home, Stock Detail, Training, Pipelines, and Models pages based on this shared infrastructure.
+
+
 High level data flow from raw market data to predictions in the UI is as follows.
 
 1. VN30 data crawling
