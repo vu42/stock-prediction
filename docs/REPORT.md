@@ -740,7 +740,7 @@ This section lists the main source code artifacts that implement the stock predi
 ## 7.1 Backend repository
 
 * **Name**: Stock prediction backend
-* **URL**: [https://github.com/alextuphan/stock-prediction](https://github.com/alextuphan/stock-prediction)
+* **URL**: [https://github.com/vu42/stock-prediction](https://github.com/vu42/stock-prediction)
 
 ## 7.2 Frontend repository
 
