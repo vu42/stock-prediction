@@ -730,3 +730,52 @@ The mathematical quantities defined above are directly reflected in the UI in se
   * Users can interpret fresher models with strong MAPE performance as more trustworthy for current market conditions.
 
 Through these mechanisms, the mathematical formulation of the prediction problem and models is tightly connected to what users observe: numeric predictions and errors, visual evaluation plots, and status indicators used to guide investment oriented interpretation.
+
+
+
+# 7. Implementation artifacts
+
+This section lists the main source code artifacts that implement the stock prediction system described in this document.
+
+## 7.1 Backend repository
+
+* **Name**: Stock prediction backend
+* **URL**: [https://github.com/alextuphan/stock-prediction](https://github.com/alextuphan/stock-prediction)
+
+## 7.2 Frontend repository
+
+* **Name**: Stock prediction web UI
+* **URL**: [https://github.com/vu42/stock-prediction-ui](https://github.com/vu42/stock-prediction-ui)   
+
+
+# 8. References
+
+[1] T. Hastie, R. Tibshirani, and J. Friedman, *The Elements of Statistical Learning: Data Mining, Inference, and Prediction*, 2nd ed. New York: Springer, 2009.
+(General background on supervised learning, regularization, and ensemble methods such as random forests and gradient boosting.)
+
+[2] C. M. Bishop, *Pattern Recognition and Machine Learning*. New York: Springer, 2006.
+(Reference for probabilistic modeling, regression, loss functions, and evaluation metrics.)
+
+[3] A. J. Smola and B. Schölkopf, “A tutorial on support vector regression,” *Statistics and Computing*, vol. 14, no. 3, pp. 199–222, 2004.
+(Primary reference for Support Vector Regression and ε–insensitive loss.)
+
+[4] L. Breiman, “Random forests,” *Machine Learning*, vol. 45, no. 1, pp. 5–32, 2001.
+(Foundational paper introducing random forest models.)
+
+[5] J. H. Friedman, “Greedy function approximation: A gradient boosting machine,” *Annals of Statistics*, vol. 29, no. 5, pp. 1189–1232, 2001.
+(Original paper on gradient boosting and additive tree models.)
+
+[6] R. Hyndman and G. Athanasopoulos, *Forecasting: Principles and Practice*, 3rd ed. OTexts, 2021.
+(Accessible reference for time series forecasting, evaluation, and error measures such as MAPE.)
+
+[7] F. Pedregosa et al., “Scikit-learn: Machine learning in Python,” *Journal of Machine Learning Research*, vol. 12, pp. 2825–2830, 2011.
+(Reference for the practical implementation of ridge regression, SVR, random forest, and gradient boosting used in many Python based ML pipelines.)
+
+[8] Apache Airflow, “Apache Airflow Documentation,” The Apache Software Foundation.
+(Reference for DAG based workflow orchestration used for VN30 data crawling and model training pipelines.)
+
+[9] PostgreSQL Global Development Group, “PostgreSQL 16 Documentation,” 2023.
+(Reference for the relational database used to store users, prices, predictions, model metrics, and pipeline metadata.)
+
+[10] Ho Chi Minh Stock Exchange (HOSE), “VN30 Index Methodology,” Ho Chi Minh Stock Exchange.
+(Background on the VN30 index composition and methodology relevant to the choice of VN30 tickers in the system.)
