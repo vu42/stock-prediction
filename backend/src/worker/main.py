@@ -6,7 +6,7 @@ import os
 import sys
 
 from redis import Redis
-from rq import Connection, Worker
+from rq import Worker
 
 # Add src to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -38,9 +38,8 @@ def run_worker(queues: list[str] | None = None):
     
     redis_conn = get_redis_connection()
     
-    with Connection(redis_conn):
-        worker = Worker(queues)
-        worker.work(with_scheduler=True)
+    worker = Worker(queues, connection=redis_conn)
+    worker.work(with_scheduler=True)
 
 
 def main():
@@ -67,9 +66,8 @@ def main():
     
     redis_conn = get_redis_connection()
     
-    with Connection(redis_conn):
-        worker = Worker(args.queues)
-        worker.work(burst=args.burst, with_scheduler=True)
+    worker = Worker(args.queues, connection=redis_conn)
+    worker.work(burst=args.burst, with_scheduler=True)
 
 
 if __name__ == "__main__":

@@ -42,7 +42,7 @@ plugins/
 *.h5
 *.pkl
 *.csv
-*.png
+# *.png
 *.jpg
 *.jpeg
 

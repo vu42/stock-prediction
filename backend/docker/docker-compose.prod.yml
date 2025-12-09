@@ -1,0 +1,161 @@
+# =============================================================================
+# Production Docker Compose (Simplified - uses MinIO)
+# =============================================================================
+# For assignment/demo purposes - keeps MinIO instead of real AWS S3
+# =============================================================================
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: stock-prediction-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: stock_prediction
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis for RQ Task Queue
+  redis:
+    image: redis:7-alpine
+    container_name: stock-prediction-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # MinIO (S3-compatible storage) - kept for simplicity
+  minio:
+    image: minio/minio:latest
+    container_name: stock-prediction-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+
+  # FastAPI Backend
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: stock-prediction-api
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/stock_prediction
+      - REDIS_URL=redis://redis:6379/0
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_ACCESS_KEY_ID=minioadmin
+      - S3_SECRET_ACCESS_KEY=minioadmin
+      - S3_BUCKET_NAME=stock-prediction-artifacts
+      - DEBUG=false
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # RQ Worker
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: stock-prediction-worker
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/stock_prediction
+      - REDIS_URL=redis://redis:6379/0
+      - S3_ENDPOINT_URL=http://minio:9000
+      - S3_ACCESS_KEY_ID=minioadmin
+      - S3_SECRET_ACCESS_KEY=minioadmin
+      - S3_BUCKET_NAME=stock-prediction-artifacts
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: python -m worker.main
+    restart: unless-stopped
+
+  # Airflow (optional - for scheduled training)
+  airflow-webserver:
+    image: apache/airflow:2.8.1-python3.11
+    container_name: stock-prediction-airflow
+    environment:
+      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://postgres:postgres@postgres:5432/airflow
+      - AIRFLOW__CORE__FERNET_KEY=your-fernet-key-here
+      - AIRFLOW__WEBSERVER__SECRET_KEY=your-webserver-secret
+      - AIRFLOW__CORE__LOAD_EXAMPLES=false
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../../dags:/opt/airflow/dags
+      - ../src:/opt/airflow/backend/src
+      - ../../output:/opt/airflow/output
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      bash -c "
+        airflow db init &&
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
+        airflow webserver
+      "
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+# =============================================================================
+# USAGE:
+# =============================================================================
+# 1. Start all services:
+#    docker-compose -f docker-compose.prod.yml up -d
+#
+# 2. Create MinIO bucket (first time only):
+#    - Open http://localhost:9001
+#    - Login: minioadmin / minioadmin
+#    - Create bucket: stock-prediction-artifacts
+#
+# 3. Access:
+#    - API: http://localhost:8000
+#    - API Docs: http://localhost:8000/docs
+#    - MinIO Console: http://localhost:9001
+#    - Airflow: http://localhost:8080 (admin/admin)
+# =============================================================================

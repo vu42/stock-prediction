@@ -178,6 +178,16 @@ class ConfigSavedResponse(BaseModel):
 # ============================================================================
 
 
+class ValidateConfigRequest(BaseModel):
+    """Validate config request schema - accepts either config object or configId."""
+
+    config: TrainingConfigSchema | None = None
+    config_id: str | None = Field(None, alias="configId")
+
+    class Config:
+        populate_by_name = True
+
+
 class ValidationBlocker(BaseModel):
     """Validation blocker schema."""
 
