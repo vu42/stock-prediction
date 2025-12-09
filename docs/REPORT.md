@@ -519,6 +519,8 @@ This section summarizes key API groups and how they support the user flows and r
 * Experiment endpoints (`/experiments/run`, `/experiments/{runId}`, `/experiments/{runId}/logs/tail`, `/experiments/{runId}/artifacts`) allow enqueuing training jobs, monitoring their status, tailing logs, and listing artifacts.
 * These endpoints directly support UC4 by allowing data scientists to configure and run experiments and observe metrics produced by the ML models.
 
+**Note:**  At the time of writing, we have not implemented a dedicated user interface for this feature. However, the functionality is fully exposed through internal API endpoints, so it can be triggered programmatically. In our deployment, model training is orchestrated by Apache Airflow, which calls the same internal application functions that are used behind these APIs. This design keeps the core training logic centralized and reusable, while the user facing UI for manual control is left as future work.
+
 ## 5.5 Pipeline control and monitoring
 
 * Pipeline endpoints (`/pipeline/dags`, `/pipeline/dags/{dagId}`, `/pipeline/dags/{dagId}/runs`, `/pipeline/runs/{runId}`, `/pipeline/dags/{dagId}/trigger`, `/pause`, `/stopRun`, `/settings`) provide listing, detail, run history, triggering, pausing, stopping, and configuration operations for Airflow DAGs.
