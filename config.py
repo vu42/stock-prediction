@@ -32,8 +32,6 @@ VN30_STOCKS = [
     "VHM",
     "MSN",
     "SAB",
-    "TCB",
-    "GAS",
 ]
 
 # Select stocks to process

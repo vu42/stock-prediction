@@ -26,8 +26,8 @@ class StockUniverseConfig(BaseModel):
 class DataWindowConfig(BaseModel):
     """Data window configuration schema."""
 
-    mode: str = "last_n_days"  # "last_n_days" or "date_range"
-    last_n_days: int | None = Field(240, alias="lastNDays")
+    mode: str = Field("last_n_days", alias="windowType")  # "n-days" or "date-range"
+    last_n_days: int | None = Field(240, alias="nDays")
     start_date: str | None = Field(None, alias="startDate")
     end_date: str | None = Field(None, alias="endDate")
     skip_refetch: bool = Field(default=False, alias="skipRefetch")
