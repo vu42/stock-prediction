@@ -5,13 +5,12 @@ stock_prediction_points, model_statuses, model_horizon_metrics
 """
 
 import uuid
-from datetime import date, datetime
-from decimal import Decimal
 from enum import Enum
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Column,
     Date,
     DateTime,
     ForeignKey,
@@ -24,7 +23,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
 
@@ -36,39 +35,39 @@ class Stock(Base, TimestampMixin):
 
     __tablename__ = "stocks"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    ticker: Mapped[str] = mapped_column(
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    ticker = Column(
         String(10),
         unique=True,
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
-    sector: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    exchange: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    logo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    financial_report_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    company_website_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    name = Column(String(255), nullable=False)
+    sector = Column(String(100), nullable=True)
+    exchange = Column(String(50), nullable=True)
+    description = Column(Text, nullable=True)
+    logo_url = Column(String(500), nullable=True)
+    financial_report_url = Column(String(500), nullable=True)
+    company_website_url = Column(String(500), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
 
     # Relationships
-    prices: Mapped[list["StockPrice"]] = relationship(
+    prices = relationship(
         "StockPrice",
         back_populates="stock",
         cascade="all, delete-orphan",
     )
-    prediction_summaries: Mapped[list["StockPredictionSummary"]] = relationship(
+    prediction_summaries = relationship(
         "StockPredictionSummary",
         back_populates="stock",
         cascade="all, delete-orphan",
     )
-    prediction_points: Mapped[list["StockPredictionPoint"]] = relationship(
+    prediction_points = relationship(
         "StockPredictionPoint",
         back_populates="stock",
         cascade="all, delete-orphan",
     )
-    model_statuses: Mapped[list["ModelStatus"]] = relationship(
+    model_statuses = relationship(
         "ModelStatus",
         back_populates="stock",
         cascade="all, delete-orphan",
@@ -89,26 +88,26 @@ class StockPrice(Base):
         Index("idx_stock_prices_stock_date", "stock_id", "price_date"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    stock_id: Mapped[int] = mapped_column(
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    stock_id = Column(
         BigInteger,
         ForeignKey("stocks.id", ondelete="CASCADE"),
         nullable=False,
     )
-    price_date: Mapped[date] = mapped_column(Date, nullable=False)
-    open_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
-    high_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
-    low_price: Mapped[Decimal | None] = mapped_column(Numeric(18, 4), nullable=True)
-    close_price: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
-    volume: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
+    price_date = Column(Date, nullable=False)
+    open_price = Column(Numeric(18, 4), nullable=True)
+    high_price = Column(Numeric(18, 4), nullable=True)
+    low_price = Column(Numeric(18, 4), nullable=True)
+    close_price = Column(Numeric(18, 4), nullable=False)
+    volume = Column(BigInteger, nullable=True)
+    created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
 
     # Relationships
-    stock: Mapped["Stock"] = relationship("Stock", back_populates="prices")
+    stock = relationship("Stock", back_populates="prices")
 
     def __repr__(self) -> str:
         return f"<StockPrice(stock_id={self.stock_id}, date={self.price_date}, close={self.close_price})>"
@@ -128,30 +127,28 @@ class StockPredictionSummary(Base):
         Index("idx_pred_summaries_horizon_date", "horizon_days", "as_of_date"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    stock_id: Mapped[int] = mapped_column(
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    stock_id = Column(
         BigInteger,
         ForeignKey("stocks.id", ondelete="CASCADE"),
         nullable=False,
     )
-    as_of_date: Mapped[date] = mapped_column(Date, nullable=False)
-    horizon_days: Mapped[int] = mapped_column(Integer, nullable=False)
-    predicted_change_pct: Mapped[Decimal] = mapped_column(Numeric(7, 4), nullable=False)
-    experiment_run_id: Mapped[uuid.UUID | None] = mapped_column(
+    as_of_date = Column(Date, nullable=False)
+    horizon_days = Column(Integer, nullable=False)
+    predicted_change_pct = Column(Numeric(7, 4), nullable=False)
+    experiment_run_id = Column(
         UUID(as_uuid=True),
         ForeignKey("experiment_runs.id"),
         nullable=True,
     )
-    created_at: Mapped[datetime] = mapped_column(
+    created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
 
     # Relationships
-    stock: Mapped["Stock"] = relationship(
-        "Stock", back_populates="prediction_summaries"
-    )
+    stock = relationship("Stock", back_populates="prediction_summaries")
 
     def __repr__(self) -> str:
         return f"<StockPredictionSummary(stock_id={self.stock_id}, horizon={self.horizon_days}d, pct={self.predicted_change_pct})>"
@@ -173,28 +170,28 @@ class StockPredictionPoint(Base):
         ),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    stock_id: Mapped[int] = mapped_column(
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    stock_id = Column(
         BigInteger,
         ForeignKey("stocks.id", ondelete="CASCADE"),
         nullable=False,
     )
-    experiment_run_id: Mapped[uuid.UUID | None] = mapped_column(
+    experiment_run_id = Column(
         UUID(as_uuid=True),
         ForeignKey("experiment_runs.id"),
         nullable=True,
     )
-    horizon_days: Mapped[int] = mapped_column(Integer, nullable=False)
-    prediction_date: Mapped[date] = mapped_column(Date, nullable=False)
-    predicted_price: Mapped[Decimal] = mapped_column(Numeric(18, 4), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(
+    horizon_days = Column(Integer, nullable=False)
+    prediction_date = Column(Date, nullable=False)
+    predicted_price = Column(Numeric(18, 4), nullable=False)
+    created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
 
     # Relationships
-    stock: Mapped["Stock"] = relationship("Stock", back_populates="prediction_points")
+    stock = relationship("Stock", back_populates="prediction_points")
 
     def __repr__(self) -> str:
         return f"<StockPredictionPoint(stock_id={self.stock_id}, date={self.prediction_date}, price={self.predicted_price})>"
@@ -216,35 +213,35 @@ class ModelStatus(Base):
     __tablename__ = "model_statuses"
     __table_args__ = (Index("ux_model_status_latest", "stock_id", "last_updated_at"),)
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    stock_id: Mapped[int] = mapped_column(
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    stock_id = Column(
         BigInteger,
         ForeignKey("stocks.id", ondelete="CASCADE"),
         nullable=False,
     )
-    experiment_run_id: Mapped[uuid.UUID | None] = mapped_column(
+    experiment_run_id = Column(
         UUID(as_uuid=True),
         ForeignKey("experiment_runs.id"),
         nullable=True,
     )
-    freshness_state: Mapped[str] = mapped_column(
+    freshness_state = Column(
         String(20),
         nullable=False,
         default=FreshnessState.FRESH.value,
     )
-    last_updated_at: Mapped[datetime] = mapped_column(
+    last_updated_at = Column(
         DateTime(timezone=True),
         nullable=False,
     )
-    created_at: Mapped[datetime] = mapped_column(
+    created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
 
     # Relationships
-    stock: Mapped["Stock"] = relationship("Stock", back_populates="model_statuses")
-    horizon_metrics: Mapped[list["ModelHorizonMetric"]] = relationship(
+    stock = relationship("Stock", back_populates="model_statuses")
+    horizon_metrics = relationship(
         "ModelHorizonMetric",
         back_populates="model_status",
         cascade="all, delete-orphan",
@@ -264,25 +261,22 @@ class ModelHorizonMetric(Base):
         UniqueConstraint("model_status_id", "horizon_days", name="uq_metric_horizon"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    model_status_id: Mapped[int] = mapped_column(
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    model_status_id = Column(
         BigInteger,
         ForeignKey("model_statuses.id", ondelete="CASCADE"),
         nullable=False,
     )
-    horizon_days: Mapped[int] = mapped_column(Integer, nullable=False)
-    mape_pct: Mapped[Decimal] = mapped_column(Numeric(6, 3), nullable=False)
+    horizon_days = Column(Integer, nullable=False)
+    mape_pct = Column(Numeric(6, 3), nullable=False)
 
     # Relationships
-    model_status: Mapped["ModelStatus"] = relationship(
-        "ModelStatus", back_populates="horizon_metrics"
-    )
+    model_status = relationship("ModelStatus", back_populates="horizon_metrics")
 
     def __repr__(self) -> str:
         return f"<ModelHorizonMetric(model_status_id={self.model_status_id}, horizon={self.horizon_days}d, mape={self.mape_pct})>"
 
 
-# Legacy table for backward compatibility with existing crawl system
 class CrawlMetadata(Base):
     """
     Tracks last crawl dates for incremental updates.
@@ -291,11 +285,11 @@ class CrawlMetadata(Base):
 
     __tablename__ = "crawl_metadata"
 
-    stock_symbol: Mapped[str] = mapped_column(String(10), primary_key=True)
-    last_crawl_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    last_data_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    total_records: Mapped[int] = mapped_column(Integer, default=0)
-    last_updated: Mapped[datetime] = mapped_column(
+    stock_symbol = Column(String(10), primary_key=True)
+    last_crawl_date = Column(Date, nullable=True)
+    last_data_date = Column(Date, nullable=True)
+    total_records = Column(Integer, default=0)
+    last_updated = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,

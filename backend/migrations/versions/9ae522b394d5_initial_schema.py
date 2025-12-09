@@ -63,7 +63,7 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_stocks_ticker'), 'stocks', ['ticker'], unique=True)
     op.create_table('users',
-    sa.Column('id', sa.UUID(), nullable=False),
+    sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('username', sa.String(length=50), nullable=False),
     sa.Column('password_hash', sa.Text(), nullable=False),
     sa.Column('display_name', sa.String(length=100), nullable=False),
@@ -77,8 +77,8 @@ def upgrade() -> None:
     )
     op.create_index(op.f('ix_users_username'), 'users', ['username'], unique=True)
     op.create_table('auth_tokens',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('user_id', sa.UUID(), nullable=False),
+    sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('token_hash', sa.String(length=255), nullable=False),
     sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -97,7 +97,7 @@ def upgrade() -> None:
     sa.Column('end_time', sa.DateTime(timezone=True), nullable=True),
     sa.Column('duration_seconds', sa.Integer(), nullable=True),
     sa.Column('triggered_by_label', sa.String(length=100), nullable=False),
-    sa.Column('triggered_by_user_id', sa.UUID(), nullable=True),
+    sa.Column('triggered_by_user_id', postgresql.UUID(as_uuid=True), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['dag_id'], ['pipeline_dags.dag_id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['triggered_by_user_id'], ['users.id'], ),
@@ -120,8 +120,8 @@ def upgrade() -> None:
     )
     op.create_index('idx_stock_prices_stock_date', 'stock_prices', ['stock_id', 'price_date'], unique=False)
     op.create_table('training_configs',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('owner_user_id', sa.UUID(), nullable=False),
+    sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('owner_user_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('config', postgresql.JSONB(astext_type=sa.Text()), nullable=False),
@@ -135,9 +135,9 @@ def upgrade() -> None:
     )
     op.create_index('idx_training_configs_owner_active', 'training_configs', ['owner_user_id', 'is_active'], unique=False)
     op.create_table('experiment_runs',
-    sa.Column('id', sa.UUID(), nullable=False),
-    sa.Column('config_id', sa.UUID(), nullable=False),
-    sa.Column('owner_user_id', sa.UUID(), nullable=False),
+    sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('config_id', postgresql.UUID(as_uuid=True), nullable=False),
+    sa.Column('owner_user_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('scope', sa.String(length=50), nullable=True),
     sa.Column('state', sa.String(length=20), nullable=False),
     sa.Column('progress_pct', sa.Numeric(precision=5, scale=2), nullable=True),
@@ -176,7 +176,7 @@ def upgrade() -> None:
     )
     op.create_table('experiment_logs',
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
-    sa.Column('run_id', sa.UUID(), nullable=False),
+    sa.Column('run_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('ts', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('level', sa.String(length=20), nullable=False),
     sa.Column('message', sa.Text(), nullable=False),
@@ -186,7 +186,7 @@ def upgrade() -> None:
     op.create_index('idx_experiment_logs_run_ts', 'experiment_logs', ['run_id', 'ts'], unique=False)
     op.create_table('experiment_ticker_artifacts',
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
-    sa.Column('run_id', sa.UUID(), nullable=False),
+    sa.Column('run_id', postgresql.UUID(as_uuid=True), nullable=False),
     sa.Column('stock_id', sa.BigInteger(), nullable=False),
     sa.Column('metrics', postgresql.JSONB(astext_type=sa.Text()), nullable=True),
     sa.Column('evaluation_png_url', sa.String(length=500), nullable=True),
@@ -203,7 +203,7 @@ def upgrade() -> None:
     op.create_table('model_statuses',
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('stock_id', sa.BigInteger(), nullable=False),
-    sa.Column('experiment_run_id', sa.UUID(), nullable=True),
+    sa.Column('experiment_run_id', postgresql.UUID(as_uuid=True), nullable=True),
     sa.Column('freshness_state', sa.String(length=20), nullable=False),
     sa.Column('last_updated_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -215,7 +215,7 @@ def upgrade() -> None:
     op.create_table('stock_prediction_points',
     sa.Column('id', sa.BigInteger(), autoincrement=True, nullable=False),
     sa.Column('stock_id', sa.BigInteger(), nullable=False),
-    sa.Column('experiment_run_id', sa.UUID(), nullable=True),
+    sa.Column('experiment_run_id', postgresql.UUID(as_uuid=True), nullable=True),
     sa.Column('horizon_days', sa.Integer(), nullable=False),
     sa.Column('prediction_date', sa.Date(), nullable=False),
     sa.Column('predicted_price', sa.Numeric(precision=18, scale=4), nullable=False),
@@ -231,7 +231,7 @@ def upgrade() -> None:
     sa.Column('as_of_date', sa.Date(), nullable=False),
     sa.Column('horizon_days', sa.Integer(), nullable=False),
     sa.Column('predicted_change_pct', sa.Numeric(precision=7, scale=4), nullable=False),
-    sa.Column('experiment_run_id', sa.UUID(), nullable=True),
+    sa.Column('experiment_run_id', postgresql.UUID(as_uuid=True), nullable=True),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['experiment_run_id'], ['experiment_runs.id'], ),
     sa.ForeignKeyConstraint(['stock_id'], ['stocks.id'], ondelete='CASCADE'),

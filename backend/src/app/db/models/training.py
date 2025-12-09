@@ -5,13 +5,12 @@ experiment_logs, experiment_ticker_artifacts
 """
 
 import uuid
-from datetime import datetime
-from decimal import Decimal
 from enum import Enum
 
 from sqlalchemy import (
     BigInteger,
     Boolean,
+    Column,
     DateTime,
     ForeignKey,
     Index,
@@ -23,7 +22,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import relationship
 
 from app.db.base import Base, TimestampMixin
 
@@ -41,29 +40,29 @@ class TrainingConfig(Base, TimestampMixin):
         Index("idx_training_configs_owner_active", "owner_user_id", "is_active"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
     )
-    owner_user_id: Mapped[uuid.UUID] = mapped_column(
+    owner_user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    name: Mapped[str] = mapped_column(String(100), nullable=False)
-    description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    config: Mapped[dict] = mapped_column(JSONB, nullable=False)
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    name = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    config = Column(JSONB, nullable=False)
+    version = Column(Integer, default=1, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
 
     # Relationships
-    owner: Mapped["User"] = relationship(
+    owner = relationship(
         "User",
         back_populates="training_configs",
         foreign_keys=[owner_user_id],
     )
-    experiment_runs: Mapped[list["ExperimentRun"]] = relationship(
+    experiment_runs = relationship(
         "ExperimentRun",
         back_populates="config",
     )
@@ -94,61 +93,61 @@ class ExperimentRun(Base):
         Index("idx_experiment_runs_state_created", "state", "created_at"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    id = Column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
     )
-    config_id: Mapped[uuid.UUID] = mapped_column(
+    config_id = Column(
         UUID(as_uuid=True),
         ForeignKey("training_configs.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    owner_user_id: Mapped[uuid.UUID] = mapped_column(
+    owner_user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="RESTRICT"),
         nullable=False,
     )
-    scope: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    state: Mapped[str] = mapped_column(
+    scope = Column(String(50), nullable=True)
+    state = Column(
         String(20),
         nullable=False,
         default=ExperimentState.PENDING.value,
     )
-    progress_pct: Mapped[Decimal | None] = mapped_column(Numeric(5, 2), nullable=True)
-    eta: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(
+    progress_pct = Column(Numeric(5, 2), nullable=True)
+    eta = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
-    started_at: Mapped[datetime | None] = mapped_column(
+    started_at = Column(
         DateTime(timezone=True),
         nullable=True,
     )
-    finished_at: Mapped[datetime | None] = mapped_column(
+    finished_at = Column(
         DateTime(timezone=True),
         nullable=True,
     )
-    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
-    summary_metrics: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    notes = Column(Text, nullable=True)
+    summary_metrics = Column(JSONB, nullable=True)
 
     # Relationships
-    config: Mapped["TrainingConfig"] = relationship(
+    config = relationship(
         "TrainingConfig",
         back_populates="experiment_runs",
     )
-    owner: Mapped["User"] = relationship(
+    owner = relationship(
         "User",
         back_populates="experiment_runs",
         foreign_keys=[owner_user_id],
     )
-    logs: Mapped[list["ExperimentLog"]] = relationship(
+    logs = relationship(
         "ExperimentLog",
         back_populates="run",
         cascade="all, delete-orphan",
     )
-    ticker_artifacts: Mapped[list["ExperimentTickerArtifact"]] = relationship(
+    ticker_artifacts = relationship(
         "ExperimentTickerArtifact",
         back_populates="run",
         cascade="all, delete-orphan",
@@ -166,22 +165,22 @@ class ExperimentLog(Base):
     __tablename__ = "experiment_logs"
     __table_args__ = (Index("idx_experiment_logs_run_ts", "run_id", "ts"),)
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    run_id: Mapped[uuid.UUID] = mapped_column(
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    run_id = Column(
         UUID(as_uuid=True),
         ForeignKey("experiment_runs.id", ondelete="CASCADE"),
         nullable=False,
     )
-    ts: Mapped[datetime] = mapped_column(
+    ts = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
-    level: Mapped[str] = mapped_column(String(20), nullable=False)
-    message: Mapped[str] = mapped_column(Text, nullable=False)
+    level = Column(String(20), nullable=False)
+    message = Column(Text, nullable=False)
 
     # Relationships
-    run: Mapped["ExperimentRun"] = relationship("ExperimentRun", back_populates="logs")
+    run = relationship("ExperimentRun", back_populates="logs")
 
     def __repr__(self) -> str:
         return f"<ExperimentLog(run_id={self.run_id}, level={self.level})>"
@@ -199,35 +198,31 @@ class ExperimentTickerArtifact(Base):
         UniqueConstraint("run_id", "stock_id", name="uq_artifact_run_stock"),
     )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    run_id: Mapped[uuid.UUID] = mapped_column(
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    run_id = Column(
         UUID(as_uuid=True),
         ForeignKey("experiment_runs.id", ondelete="CASCADE"),
         nullable=False,
     )
-    stock_id: Mapped[int] = mapped_column(
+    stock_id = Column(
         BigInteger,
         ForeignKey("stocks.id", ondelete="CASCADE"),
         nullable=False,
     )
-    metrics: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
-    evaluation_png_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    future_png_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    model_pkl_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    scaler_pkl_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    future_predictions_csv: Mapped[str | None] = mapped_column(
-        String(500), nullable=True
-    )
-    created_at: Mapped[datetime] = mapped_column(
+    metrics = Column(JSONB, nullable=True)
+    evaluation_png_url = Column(String(500), nullable=True)
+    future_png_url = Column(String(500), nullable=True)
+    model_pkl_url = Column(String(500), nullable=True)
+    scaler_pkl_url = Column(String(500), nullable=True)
+    future_predictions_csv = Column(String(500), nullable=True)
+    created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
     )
 
     # Relationships
-    run: Mapped["ExperimentRun"] = relationship(
-        "ExperimentRun", back_populates="ticker_artifacts"
-    )
+    run = relationship("ExperimentRun", back_populates="ticker_artifacts")
 
     def __repr__(self) -> str:
         return f"<ExperimentTickerArtifact(run_id={self.run_id}, stock_id={self.stock_id})>"

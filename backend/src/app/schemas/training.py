@@ -241,7 +241,9 @@ class ExperimentRunResponse(BaseModel):
     """Experiment run response schema."""
 
     run_id: str = Field(..., alias="runId")
+    created_at: datetime = Field(..., alias="createdAt")
     state: str
+    config_summary: str | None = Field(None, alias="configSummary")
     progress_pct: float | None = Field(None, alias="progressPct")
     eta: datetime | None = None
     started_at: datetime | None = Field(None, alias="startedAt")

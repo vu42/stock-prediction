@@ -11,6 +11,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init-airflow-db.sql:/docker-entrypoint-initdb.d/init-airflow-db.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -62,6 +63,10 @@ services:
       - S3_ENDPOINT_URL=http://minio:9000
       - S3_ACCESS_KEY_ID=minioadmin
       - S3_SECRET_ACCESS_KEY=minioadmin
+      - AIRFLOW_BASE_URL=http://stock-prediction-airflow:8080
+      # Must match the AIRFLOW_API_USER/PASSWORD in airflow-webserver service
+      - AIRFLOW_USERNAME=airflow_api
+      - AIRFLOW_PASSWORD=AirflowApi@2025!
       - DEBUG=true
     ports:
       - "8000:8000"
@@ -97,9 +102,9 @@ services:
         condition: service_healthy
     command: python -m worker.main
 
-  # Airflow (simplified for development)
+  # Airflow (for DAG runs)
   airflow-webserver:
-    image: apache/airflow:2.8.1-python3.11
+    image: apache/airflow:3.0.1-python3.11
     container_name: stock-prediction-airflow
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
@@ -107,6 +112,13 @@ services:
       - AIRFLOW__CORE__FERNET_KEY=your-fernet-key-here
       - AIRFLOW__WEBSERVER__SECRET_KEY=your-webserver-secret
       - AIRFLOW__CORE__LOAD_EXAMPLES=false
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.providers.fab.auth_manager.api.auth.backend.basic_auth,airflow.providers.fab.auth_manager.api.auth.backend.session
+      # Fixed API user credentials (for system-to-system communication)
+      - AIRFLOW_API_USER=airflow_api
+      - AIRFLOW_API_PASSWORD=AirflowApi@2025!
+      - PYTHONPATH=/opt/airflow/backend/src
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/stock_prediction
+      - _PIP_ADDITIONAL_REQUIREMENTS=pydantic-settings httpx boto3 scikit-learn sendgrid bcrypt python-jose passlib matplotlib
     ports:
       - "8080:8080"
     volumes:
@@ -118,9 +130,18 @@ services:
         condition: service_healthy
     command: >
       bash -c "
-        airflow db init &&
-        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true &&
-        airflow webserver
+        airflow db migrate &&
+        echo 'Creating API user...' &&
+        airflow users create \
+          --username $${AIRFLOW_API_USER} \
+          --password $${AIRFLOW_API_PASSWORD} \
+          --firstname API \
+          --lastname Service \
+          --role Admin \
+          --email api@stockprediction.local || echo 'User may already exist' &&
+        echo 'Starting Airflow...' &&
+        airflow webserver --port 8080 &
+        exec airflow scheduler
       "
 
 volumes:

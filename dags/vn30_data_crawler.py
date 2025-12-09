@@ -21,7 +21,7 @@ sys.path.insert(0, backend_src)
 import pendulum
 from datetime import timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 
 # Import from new backend structure
 from app.core.config import settings
@@ -77,7 +77,7 @@ with DAG(
     dag_id="vn30_data_crawler",
     default_args=default_args,
     description=f"Incremental data crawler for {len(settings.vn30_stocks)} VN30 stocks from VNDirect API",
-    schedule_interval="0 17 * * *",
+    schedule="0 17 * * *",
     start_date=pendulum.datetime(2025, 10, 1, tz=local_tz),
     catchup=False,
     tags=["vn30", "data-crawler", "incremental", "postgres"],

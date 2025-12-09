@@ -20,7 +20,7 @@ sys.path.insert(0, backend_src)
 import pendulum
 from datetime import timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.standard.operators.python import PythonOperator
 from airflow.sensors.external_task import ExternalTaskSensor
 
 # Import from new backend structure
@@ -84,7 +84,7 @@ with DAG(
     dag_id='vn30_model_training',
     default_args=default_args,
     description=f'Ensemble model training and prediction for {len(settings.vn30_stocks)} VN30 stocks',
-    schedule_interval='0 18 * * *',
+    schedule='0 18 * * *',
     start_date=pendulum.datetime(2025, 10, 1, tz=local_tz),
     catchup=False,
     tags=['vn30', 'ml', 'ensemble', 'training', 'prediction'],

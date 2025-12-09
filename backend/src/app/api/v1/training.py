@@ -281,9 +281,20 @@ async def get_experiment_run(
             detail=f"Experiment run not found: {run_id}",
         )
 
+    # Generate config summary
+    config_summary = None
+    if run.config:
+        cfg = run.config.config or {}
+        tickers = cfg.get("universe", {}).get("tickers", [])
+        use_all = cfg.get("universe", {}).get("useAllVn30", False)
+        ticker_str = "All VN30" if use_all else f"{len(tickers)} tickers"
+        config_summary = f"{ticker_str}, {run.scope or 'selected'}"
+
     return ExperimentRunResponse(
         runId=str(run.id),
+        createdAt=run.created_at,
         state=run.state,
+        configSummary=config_summary,
         progressPct=float(run.progress_pct) if run.progress_pct else None,
         eta=run.eta,
         startedAt=run.started_at,
@@ -350,19 +361,31 @@ async def list_experiment_runs(
 
     runs = db.execute(stmt).scalars().all()
 
-    data = [
-        ExperimentRunResponse(
-            runId=str(run.id),
-            state=run.state,
-            progressPct=float(run.progress_pct) if run.progress_pct else None,
-            eta=run.eta,
-            startedAt=run.started_at,
-            finishedAt=run.finished_at,
-            scope=run.scope,
-            notes=run.notes,
+    data = []
+    for run in runs:
+        # Generate config summary
+        config_summary = None
+        if run.config:
+            cfg = run.config.config or {}
+            tickers = cfg.get("universe", {}).get("tickers", [])
+            use_all = cfg.get("universe", {}).get("useAllVn30", False)
+            ticker_str = "All VN30" if use_all else f"{len(tickers)} tickers"
+            config_summary = f"{ticker_str}, {run.scope or 'selected'}"
+        
+        data.append(
+            ExperimentRunResponse(
+                runId=str(run.id),
+                createdAt=run.created_at,
+                state=run.state,
+                configSummary=config_summary,
+                progressPct=float(run.progress_pct) if run.progress_pct else None,
+                eta=run.eta,
+                startedAt=run.started_at,
+                finishedAt=run.finished_at,
+                scope=run.scope,
+                notes=run.notes,
+            )
         )
-        for run in runs
-    ]
 
     return RunsListResponse(
         data=data,

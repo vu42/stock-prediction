@@ -202,13 +202,7 @@ class GanttResponse(BaseModel):
 # Log Schemas
 # ============================================================================
 
-
-class LogEntry(BaseModel):
-    """Log entry schema."""
-
-    timestamp: datetime
-    level: str
-    message: str
+from app.schemas.training import LogEntry
 
 
 class LogsResponse(BaseModel):

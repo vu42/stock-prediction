@@ -339,8 +339,12 @@ Trần Hoàng Duy
     - Response: { tickerArtifacts: [ { ticker, metrics: { mape7dPct, ... }, files: [ { type: "evaluation_png"|"future_png"|"model_pkl"|"scaler_pkl"|"future_predictions_csv", url } ] } ] }.
 
 - Data Scientist – Pipelines (Airflow Control):
+  - POST /api/v1/pipeline/dags/sync
+    - Purpose: sync DAGs from Airflow to local database.
+    - Response: { message, count }.
   - GET /api/v1/pipeline/dags
     - Purpose: populate left-hand DAG catalog.
+    - Query params: source ("db" or "airflow", default "airflow").
     - Response: [ { dagId, name, description, status, scheduleCron, scheduleLabel, nextRunAt, lastRunAt, lastRunState } ].
   - GET /api/v1/pipeline/dags/{dagId}
     - Purpose: populate selected DAG header and Overview tab basics.
