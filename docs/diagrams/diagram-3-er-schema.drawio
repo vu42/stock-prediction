@@ -1,0 +1,482 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36" version="29.2.6">
+  <diagram name="ER Schema" id="er-schema">
+    <mxGraphModel dx="1188" dy="790" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2400" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="users" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="users" vertex="1">
+          <mxGeometry height="265" width="220" x="40" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="users-pk" parent="users" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : UUID" vertex="1">
+          <mxGeometry height="25" width="220" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="users-f1" parent="users" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     username : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="users-f2" parent="users" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     password_hash : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="users-f3" parent="users" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     display_name : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="users-f4" parent="users" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     role : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="users-f5" parent="users" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     email : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="users-f6" parent="users" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     is_active : BOOLEAN" vertex="1">
+          <mxGeometry height="25" width="220" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="users-f7" parent="users" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="220" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="users-f8" parent="users" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     updated_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="220" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="stocks" vertex="1">
+          <mxGeometry height="340" width="240" x="300" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-pk" parent="stocks" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="240" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f1" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     ticker : TEXT (UNIQUE)" vertex="1">
+          <mxGeometry height="25" width="240" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f2" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     name : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f3" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     sector : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f4" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     exchange : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f5" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     description : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f6" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     logo_url : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f7" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     financial_report_url : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f8" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     company_website_url : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f9" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     is_active : BOOLEAN" vertex="1">
+          <mxGeometry height="25" width="240" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f10" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="240" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="stocks-f11" parent="stocks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     updated_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="240" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-sum" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=13;" value="stock_prediction_summaries" vertex="1">
+          <mxGeometry height="215" width="260" x="580" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-sum-pk" parent="pred-sum" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-sum-fk1" parent="pred-sum" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  stock_id : BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-sum-f1" parent="pred-sum" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     as_of_date : DATE" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-sum-f2" parent="pred-sum" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     horizon_days : INTEGER" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-sum-f3" parent="pred-sum" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     predicted_change_pct : NUMERIC" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-sum-fk2" parent="pred-sum" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  experiment_run_id : UUID" vertex="1">
+          <mxGeometry height="25" width="260" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-sum-f4" parent="pred-sum" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="260" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="model-status" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="model_statuses" vertex="1">
+          <mxGeometry height="190" width="260" x="880" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="model-status-pk" parent="model-status" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="model-status-fk1" parent="model-status" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  stock_id : BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="model-status-fk2" parent="model-status" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  experiment_run_id : UUID" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="model-status-f1" parent="model-status" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     freshness_state : TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="model-status-f2" parent="model-status" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     last_updated_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="model-status-f3" parent="model-status" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="260" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="training_configs" vertex="1">
+          <mxGeometry height="265" width="220" x="40" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config-pk" parent="train-config" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : UUID" vertex="1">
+          <mxGeometry height="25" width="220" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config-fk" parent="train-config" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  owner_user_id : UUID" vertex="1">
+          <mxGeometry height="25" width="220" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config-f1" parent="train-config" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     name : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config-f2" parent="train-config" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     description : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config-f3" parent="train-config" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     config : JSONB" vertex="1">
+          <mxGeometry height="25" width="220" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config-f4" parent="train-config" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     version : INTEGER" vertex="1">
+          <mxGeometry height="25" width="220" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config-f5" parent="train-config" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     is_active : BOOLEAN" vertex="1">
+          <mxGeometry height="25" width="220" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config-f6" parent="train-config" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="220" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="train-config-f7" parent="train-config" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     updated_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="220" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="prices" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="stock_prices" vertex="1">
+          <mxGeometry height="265" width="240" x="300" y="420" as="geometry" />
+        </mxCell>
+        <mxCell id="prices-pk" parent="prices" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="240" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="prices-fk" parent="prices" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  stock_id : BIGINT" vertex="1">
+          <mxGeometry height="25" width="240" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="prices-f1" parent="prices" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     price_date : DATE" vertex="1">
+          <mxGeometry height="25" width="240" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="prices-f2" parent="prices" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     open_price : NUMERIC(18,4)" vertex="1">
+          <mxGeometry height="25" width="240" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="prices-f3" parent="prices" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     high_price : NUMERIC(18,4)" vertex="1">
+          <mxGeometry height="25" width="240" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="prices-f4" parent="prices" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     low_price : NUMERIC(18,4)" vertex="1">
+          <mxGeometry height="25" width="240" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="prices-f5" parent="prices" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     close_price : NUMERIC(18,4)" vertex="1">
+          <mxGeometry height="25" width="240" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="prices-f6" parent="prices" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     volume : BIGINT" vertex="1">
+          <mxGeometry height="25" width="240" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="prices-f7" parent="prices" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="240" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-pts" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=13;" value="stock_prediction_points" vertex="1">
+          <mxGeometry height="215" width="260" x="580" y="290" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-pts-pk" parent="pred-pts" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-pts-fk1" parent="pred-pts" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  stock_id : BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-pts-fk2" parent="pred-pts" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  experiment_run_id : UUID" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-pts-f1" parent="pred-pts" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     horizon_days : INTEGER" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-pts-f2" parent="pred-pts" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     prediction_date : DATE" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-pts-f3" parent="pred-pts" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     predicted_price : NUMERIC(18,4)" vertex="1">
+          <mxGeometry height="25" width="260" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="pred-pts-f4" parent="pred-pts" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="260" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="model-metrics" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=13;" value="model_horizon_metrics" vertex="1">
+          <mxGeometry height="140" width="260" x="880" y="265" as="geometry" />
+        </mxCell>
+        <mxCell id="model-metrics-pk" parent="model-metrics" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="model-metrics-fk" parent="model-metrics" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  model_status_id : BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="model-metrics-f1" parent="model-metrics" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     horizon_days : INTEGER" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="model-metrics-f2" parent="model-metrics" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     mape_pct : NUMERIC(6,3)" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="pipeline_dags" vertex="1">
+          <mxGeometry height="415" width="280" x="580" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-pk" parent="pipe-dags" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  dag_id : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f1" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     name : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f2" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     description : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f3" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     status : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f4" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     schedule_cron : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f5" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     schedule_label : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f6" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     timezone : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f7" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     catchup : BOOLEAN" vertex="1">
+          <mxGeometry height="25" width="280" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f8" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     max_active_runs : INTEGER" vertex="1">
+          <mxGeometry height="25" width="280" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f9" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     default_retries : INTEGER" vertex="1">
+          <mxGeometry height="25" width="280" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f10" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     default_retry_delay_minutes : INT" vertex="1">
+          <mxGeometry height="25" width="280" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f11" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     default_owner : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f12" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     default_tags : TEXT[]" vertex="1">
+          <mxGeometry height="25" width="280" y="330" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f13" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="280" y="355" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-dags-f14" parent="pipe-dags" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     updated_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="280" y="380" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-tasks" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="pipeline_run_tasks" vertex="1">
+          <mxGeometry height="215" width="240" x="900" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-tasks-pk" parent="pipe-tasks" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="240" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-tasks-fk" parent="pipe-tasks" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  run_id : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-tasks-f1" parent="pipe-tasks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     task_id : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-tasks-f2" parent="pipe-tasks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     label : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-tasks-f3" parent="pipe-tasks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     state : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-tasks-f4" parent="pipe-tasks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     start_time : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="240" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-tasks-f5" parent="pipe-tasks" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     end_time : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="240" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="experiment_runs" vertex="1">
+          <mxGeometry height="340" width="220" x="40" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-pk" parent="exp-runs" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : UUID" vertex="1">
+          <mxGeometry height="25" width="220" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-fk1" parent="exp-runs" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  config_id : UUID" vertex="1">
+          <mxGeometry height="25" width="220" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-fk2" parent="exp-runs" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  owner_user_id : UUID" vertex="1">
+          <mxGeometry height="25" width="220" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-f1" parent="exp-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     scope : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-f2" parent="exp-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     state : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-f3" parent="exp-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     progress_pct : NUMERIC(5,2)" vertex="1">
+          <mxGeometry height="25" width="220" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-f4" parent="exp-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     eta : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="220" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-f5" parent="exp-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="220" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-f6" parent="exp-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     started_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="220" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-f7" parent="exp-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     finished_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="220" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-f8" parent="exp-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     notes : TEXT" vertex="1">
+          <mxGeometry height="25" width="220" y="280" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-runs-f9" parent="exp-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     summary_metrics : JSONB" vertex="1">
+          <mxGeometry height="25" width="220" y="305" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-logs" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="experiment_logs" vertex="1">
+          <mxGeometry height="165" width="240" x="300" y="710" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-logs-pk" parent="exp-logs" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="240" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-logs-fk" parent="exp-logs" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  run_id : UUID" vertex="1">
+          <mxGeometry height="25" width="240" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-logs-f1" parent="exp-logs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     ts : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="240" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-logs-f2" parent="exp-logs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     level : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-logs-f3" parent="exp-logs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     message : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=12;" value="experiment_ticker_artifacts" vertex="1">
+          <mxGeometry height="290" width="260" x="300" y="910" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-pk" parent="exp-art" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="260" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-fk1" parent="exp-art" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  run_id : UUID" vertex="1">
+          <mxGeometry height="25" width="260" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-fk2" parent="exp-art" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  stock_id : BIGINT" vertex="1">
+          <mxGeometry height="25" width="260" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-f1" parent="exp-art" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     metrics : JSONB" vertex="1">
+          <mxGeometry height="25" width="260" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-f2" parent="exp-art" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     evaluation_png_url : TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-f3" parent="exp-art" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     future_png_url : TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-f4" parent="exp-art" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     model_pkl_url : TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-f5" parent="exp-art" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     scaler_pkl_url : TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-f6" parent="exp-art" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     future_predictions_csv : TEXT" vertex="1">
+          <mxGeometry height="25" width="260" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="exp-art-f7" parent="exp-art" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="260" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="pipeline_runs" vertex="1">
+          <mxGeometry height="290" width="280" x="580" y="990" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-pk" parent="pipe-runs" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  run_id : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-fk1" parent="pipe-runs" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  dag_id : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-f1" parent="pipe-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     conf : JSONB" vertex="1">
+          <mxGeometry height="25" width="280" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-f2" parent="pipe-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     state : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-f3" parent="pipe-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     start_time : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="280" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-f4" parent="pipe-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     end_time : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="280" y="155" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-f5" parent="pipe-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     duration_seconds : INTEGER" vertex="1">
+          <mxGeometry height="25" width="280" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-f6" parent="pipe-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     triggered_by_label : TEXT" vertex="1">
+          <mxGeometry height="25" width="280" y="205" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-fk2" parent="pipe-runs" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  triggered_by_user_id : UUID" vertex="1">
+          <mxGeometry height="25" width="280" y="230" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-runs-f7" parent="pipe-runs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     created_at : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="280" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-logs" parent="1" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;fillColor=#000000;fontColor=#ffffff;strokeColor=#000000;fontSize=14;" value="pipeline_run_logs" vertex="1">
+          <mxGeometry height="165" width="240" x="900" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-logs-pk" parent="pipe-logs" style="text;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=1;fontSize=12;" value="PK  id : BIGSERIAL" vertex="1">
+          <mxGeometry height="25" width="240" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-logs-fk" parent="pipe-logs" style="text;strokeColor=none;fillColor=#e0e0e0;align=left;verticalAlign=middle;spacingLeft=10;fontStyle=2;fontSize=12;" value="FK  run_id : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="55" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-logs-f1" parent="pipe-logs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     ts : TIMESTAMPTZ" vertex="1">
+          <mxGeometry height="25" width="240" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-logs-f2" parent="pipe-logs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     level : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="105" as="geometry" />
+        </mxCell>
+        <mxCell id="pipe-logs-f3" parent="pipe-logs" style="text;strokeColor=none;fillColor=#ffffff;align=left;verticalAlign=middle;spacingLeft=10;fontSize=12;" value="     message : TEXT" vertex="1">
+          <mxGeometry height="25" width="240" y="130" as="geometry" />
+        </mxCell>
+        <mxCell id="rel1" edge="1" parent="1" source="users" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="train-config" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel2" edge="1" parent="1" source="train-config" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="exp-runs" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel3" edge="1" parent="1" source="stocks" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="prices" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel4" edge="1" parent="1" source="stocks" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=1;exitY=0.2;entryX=0;entryY=0.2;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="pred-sum" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel5" edge="1" parent="1" source="stocks" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=1;exitY=0.5;entryX=0;entryY=0.2;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="pred-pts" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel6" edge="1" parent="1" source="stocks" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=1;exitY=0.15;entryX=0;entryY=0.3;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="model-status" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel7" edge="1" parent="1" source="model-status" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="model-metrics" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel8" edge="1" parent="1" source="exp-runs" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=1;exitY=0.7;entryX=0;entryY=0.3;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="exp-logs" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel9" edge="1" parent="1" source="exp-runs" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=1;exitY=0.9;entryX=0;entryY=0.2;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="exp-art" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel10" edge="1" parent="1" source="pipe-dags" style="endArrow=classic;html=1;strokeWidth=2;strokeColor=#000000;exitX=0.5;exitY=1;entryX=0.5;entryY=0;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="pipe-runs" value="1:N">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rel11" edge="1" parent="1" source="pipe-runs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;exitX=0.5;exitY=0;entryX=0;entryY=0.5;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="pipe-tasks" value="1:N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="720" y="970" />
+              <mxPoint x="720" y="648" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rel12" edge="1" parent="1" source="pipe-runs" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;strokeWidth=2;strokeColor=#000000;exitX=1;exitY=0.25;entryX=0;entryY=0.5;fontSize=14;fontStyle=1;labelBackgroundColor=#ffffff;" target="pipe-logs" value="1:N">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="880" y="1063" />
+              <mxPoint x="880" y="873" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
