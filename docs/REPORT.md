@@ -523,7 +523,19 @@ This section summarizes key API groups and how they support the user flows and r
 
 ## 5.5 Pipeline control and monitoring
 
-* Pipeline endpoints (`/pipeline/dags`, `/pipeline/dags/{dagId}`, `/pipeline/dags/{dagId}/runs`, `/pipeline/runs/{runId}`, `/pipeline/dags/{dagId}/trigger`, `/pause`, `/stopRun`, `/settings`) provide listing, detail, run history, triggering, pausing, stopping, and configuration operations for Airflow DAGs.
+* Pipeline endpoints provide listing, detail, run history, triggering, pausing, stopping, and configuration operations for Airflow DAGs:
+  * `GET /pipeline/dags` – list all DAGs with status and last run info
+  * `GET /pipeline/dags/{dagId}` – get DAG details including schedule, owner, tags
+  * `GET /pipeline/dags/{dagId}/runs` – list runs for a DAG with filters (state, date range, pagination)
+  * `GET /pipeline/runs/{runId}` – get run details
+  * `POST /pipeline/dags/{dagId}/trigger` – trigger a new DAG run with optional config payload
+  * `POST /pipeline/dags/{dagId}/pause` – pause or resume a DAG
+  * `POST /pipeline/dags/{dagId}/stopRun` – stop an active DAG run
+  * `PATCH /pipeline/dags/{dagId}/settings` – update DAG settings (schedule, retries, timezone)
+  * `POST /pipeline/dags/sync` – sync DAGs from Airflow to local database
+  * `GET /pipeline/runs/{runId}/graph` – get task graph for visualization
+  * `GET /pipeline/runs/{runId}/gantt` – get Gantt chart data for task timeline
+  * `GET /pipeline/runs/{runId}/logs` – get logs for a run or specific task
 * These endpoints are proxies around Airflow REST or DB level operations, sometimes updating mirrored metadata in `pipeline_*` tables.
 * They support UC5 by enabling monitoring and control of data and training pipelines from within the web app.
 
