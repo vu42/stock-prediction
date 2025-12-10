@@ -432,7 +432,9 @@ The core tables supporting the system are defined in the data model specificatio
 * `experiment_logs` and `experiment_ticker_artifacts`: Store run level logs and object storage URLs for artifacts such as evaluation plots and future prediction CSVs.
 * `pipeline_dags`, `pipeline_runs`, `pipeline_run_tasks`, `pipeline_run_logs`: Store mirrored Airflow metadata and logs to support pipeline monitoring.
 
-The ER summary indicates that users are linked to training configurations, experiments, and pipeline runs; stocks are linked to prices, predictions, model statuses, and artifacts; model statuses are linked to horizon metrics; training configurations are linked to experiment runs and further to logs and artifacts; experiment runs optionally link back into prediction tables; and pipelines tables are linked hierarchically from DAGs to runs to tasks and logs. 
+![ER Diagram](/docs/diagrams/diagram-3-er-schema.png)
+
+Figure 4.1 Logical data model / ER diagram
 
 ## 4.2 System architecture and data flow
 
@@ -460,7 +462,8 @@ The system architecture includes the following components.
   * Serve as system of record for all relational data and as storage for evaluation plots, model pickles, and future predictions.
 
 ![High level architecture of the stock prediction system](/docs/diagrams/system-architecture.png)
-Figure 4.1 High level architecture of the stock prediction system
+
+Figure 4.2 High level architecture of the stock prediction system
 
 This diagram shows the main components of the stock prediction system and how they interact. End users and data scientists access the system through a browser that loads the single page frontend application. The frontend communicates with a backend API service over HTTP and JSON, which centralizes all business logic, authentication, model and prediction queries, and pipeline control. The backend reads and writes relational data in PostgreSQL, stores plots and model artifacts in object storage, and proxies requests to Airflow for VN30 data crawling and training pipelines. Training jobs are enqueued by the backend and executed by a separate training worker, which builds features, trains per horizon models, computes metrics, and writes predictions and artifacts back to the database and storage. The frontend then uses the API to render the Login, Home, Stock Detail, Training, Pipelines, and Models pages based on this shared infrastructure.
 
@@ -574,6 +577,10 @@ $$
 
 approximates the true target $y_{t+h}$ for all valid time indices $t$. Given a dataset of pairs $\{(\mathbf{x}_t, y_{t+h})\}_{t=1}^{N_h}$ constructed from historical data, the models described below are trained to minimize suitable loss functions over this dataset.
 
+![Horizon and target diagram](/docs/diagrams/diagram-7-horizon-target.png)
+
+Figure 6.1 Horizon and target diagram
+
 ## 6.2 Selected models and their mathematics
 
 The system uses several regression models per horizon and ticker, as defined in the training configuration.
@@ -682,7 +689,7 @@ where $h_m$ is the tree added at iteration $m$, $M$ is the number of boosting st
 
 ![Machine learning pipeline data flow](/docs/diagrams/ml-pineline.png)
 
-Figure 6.1 Machine learning pipeline data flow
+Figure 6.2 Machine learning pipeline data flow
 
 This diagram summarizes the end to end data flow of the machine learning pipeline. Historical price data for the selected VN30 subset is first transformed into time ordered feature vectors using a fixed lookback window and a set of technical indicators. The data is then split into training and validation segments that respect time order and used to build per horizon datasets for 7, 15, and 30 day targets. For each horizon, multiple models such as ridge regression, SVR with RBF kernel, random forest, and gradient boosting are trained and produce per model predictions. These predictions are combined by an ensemble module, evaluated using MAPE on the validation set, and the resulting predictions, metrics, and plots are written to the database and object storage. Finally, the backend API exposes this information to the frontend, which renders the Home, Stock Detail, and Models pages.
 
