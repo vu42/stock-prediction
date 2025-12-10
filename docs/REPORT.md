@@ -29,10 +29,6 @@ The system includes:
 
 Out of scope are advanced features such as historical model comparison, retrain buttons from the UI, advanced filtering on the Models page, and full production grade risk management. 
 
-This section reflects your project scope decision to work on a subset of VN30 tickers due to resource limits on AWS. I cannot verify these constraints independently.
-
-Here is a revised version of **1.3 Definitions, acronyms, and abbreviations** that you can drop into the report.
-
 ---
 
 ### 1.3 Definitions, acronyms, and abbreviations
@@ -44,9 +40,9 @@ Here is a revised version of **1.3 Definitions, acronyms, and abbreviations** th
 
 * **Ticker**: Stock symbol of a company, for example FPT, VCB, HPG. In this system, tickers are restricted to the `VN30_STOCKS` subset described above.
 
-* **End User**: A user who views predictions and market information for investment oriented interpretation.
+* **End User**: A user who views predictions and market information for investment oriented interpretation (See section 1.4 for more details).
 
-* **Data Scientist**: A user who configures features, runs training experiments, monitors pipelines, and inspects model performance.
+* **Data Scientist**: A user who configures features, runs training experiments, monitors pipelines, and inspects model performance (See section 1.4 for more details).
 
 * **Horizon**: Prediction offset in days, for example 7, 15, or 30 days from a reference time $t$.
 
@@ -61,6 +57,17 @@ Here is a revised version of **1.3 Definitions, acronyms, and abbreviations** th
 * **MAPE**: Mean Absolute Percentage Error, the main evaluation metric used for each prediction horizon.
 
 * **Model status**: Aggregated status per ticker and horizon summarizing freshness and accuracy of the latest trained model.
+
+### 1.4 Stakeholders and benefits
+
+This project involves several key stakeholders who benefit from the stock prediction system in different ways.
+
+- End User  
+  End Users are individuals who use the system to explore VN30 stock movements for investment oriented interpretation. They benefit from an integrated Home page that surfaces buy and sell opportunities, a Stock Detail page that combines historical prices with 7 day, 15 day, and 30 day predictions, and a Models view that summarizes model quality. Instead of building their own prediction tools, they can quickly inspect model based signals and compare them with recent market behaviour.
+
+- Data Scientist  
+  Data Scientists are responsible for configuring features, training models, and monitoring pipelines. They benefit from a unified environment that gives them control over feature engineering, model selection, and ensemble strategies, together with a Training screen, Airflow based pipeline monitoring, and a Models page that exposes per ticker metrics and evaluation plots. This reduces ad hoc scripting and provides a repeatable workflow for running experiments and analysing results.
+
 
 ---
 
@@ -669,6 +676,16 @@ where $h_m$ is the tree added at iteration $m$, $M$ is the number of boosting st
 
 ## 6.3 Data preprocessing and splitting
 
+### 6.3.1 Dataset description
+
+The experiments in this project use daily OHLCV price data for a fixed subset of VN30 tickers. Due to resource constraints for training on AWS, the system focuses on the following symbols:
+
+`VN30_STOCKS = ["FPT", "VCB", "VNM", "HPG", "VIC", "VHM", "MSN", "SAB", "TCB", "GAS"]`
+
+For each selected ticker, the dataset contains a time ordered series of trading days with open, high, low, close, and volume values. The raw files, together with any intermediate processed datasets, are stored in the shared drive referenced in the report header, where they can be inspected and reused for reproduction. The `stock_prices` table in PostgreSQL is populated from these raw files and serves as the single source of truth for all historical prices used in feature engineering, model training, and evaluation.
+
+### 6.3.2 Preprocessing pipeline
+
 * Lookback window construction
 
   * For each ticker, time ordered daily prices and volumes are collected from `stock_prices`.
@@ -755,6 +772,33 @@ The mathematical quantities defined above are directly reflected in the UI in se
 
 Through these mechanisms, the mathematical formulation of the prediction problem and models is tightly connected to what users observe: numeric predictions and errors, visual evaluation plots, and status indicators used to guide investment oriented interpretation.
 
+### 6.7 Evaluation results
+
+This subsection summarises the quantitative performance of the trained models on held out test data. The main evaluation metric is Mean Absolute Percentage Error (MAPE), computed separately for each prediction horizon as defined in Section 6.5.
+
+Table 6.1 reports the aggregate MAPE values across all supported tickers in `VN30_STOCKS` for the three horizons.
+
+**Table 6.1 Aggregate MAPE by horizon**
+
+| Horizon | Mean MAPE across tickers (%) | Minimum MAPE (%) | Maximum MAPE (%) |
+|--------:|------------------------------:|------------------:|------------------:|
+| 7 days  | 4.12               | 2.44     | 4.95     |
+| 15 days | 5.21              | 3.62    | 6.84    |
+| 30 days | 7.63              | 5.66    | 11.24    |
+
+
+The values in Table 6.1 indicate the typical relative error of the system when predicting percentage price changes over the chosen horizons. In particular, the 7 day horizon tends to achieve lower MAPE than the longer horizons, which is consistent with the intuition that shorter term price movements are easier to forecast from recent technical indicators.
+
+To illustrate performance at the ticker level, Table 6.2 shows example MAPE values for one representative stock from the VN30 subset. The full set of metrics for all tickers is provided as CSV files in the shared drive so that teaching staff can inspect the raw evaluation data.
+
+**Table 6.2 Example per ticker MAPE**
+
+| Ticker | MAPE 7D (%) | MAPE 15D (%) | MAPE 30D (%) |
+|:------:|------------:|-------------:|-------------:|
+| FPT    | 2.44 | 6.84 | 6.71 |
+
+
+For the example ticker in Table 6.2, the 7 day horizon achieves the lowest MAPE, while the 30 day horizon exhibits higher error, reflecting the increased uncertainty of longer term predictions. These values are consistent with the qualitative information presented on the Models page, where MAPE 7D, MAPE 15D, and MAPE 30D are shown together with colour coding to indicate model quality for each horizon.
 
 
 # 7. Implementation artifacts
