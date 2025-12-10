@@ -519,11 +519,21 @@ This section summarizes key API groups and how they support the user flows and r
 * Experiment endpoints (`/experiments/run`, `/experiments/{runId}`, `/experiments/{runId}/logs/tail`, `/experiments/{runId}/artifacts`) allow enqueuing training jobs, monitoring their status, tailing logs, and listing artifacts.
 * These endpoints directly support UC4 by allowing data scientists to configure and run experiments and observe metrics produced by the ML models.
 
-**Note:**  At the time of writing, we have not implemented a dedicated user interface for this feature. However, the functionality is fully exposed through internal API endpoints, so it can be triggered programmatically. In our deployment, model training is orchestrated by Apache Airflow, which calls the same internal application functions that are used behind these APIs. This design keeps the core training logic centralized and reusable, while the user facing UI for manual control is left as future work.
-
 ## 5.5 Pipeline control and monitoring
 
-* Pipeline endpoints (`/pipeline/dags`, `/pipeline/dags/{dagId}`, `/pipeline/dags/{dagId}/runs`, `/pipeline/runs/{runId}`, `/pipeline/dags/{dagId}/trigger`, `/pause`, `/stopRun`, `/settings`) provide listing, detail, run history, triggering, pausing, stopping, and configuration operations for Airflow DAGs.
+* Pipeline endpoints provide listing, detail, run history, triggering, pausing, stopping, and configuration operations for Airflow DAGs:
+  * `GET /pipeline/dags` – list all DAGs with status and last run info
+  * `GET /pipeline/dags/{dagId}` – get DAG details including schedule, owner, tags
+  * `GET /pipeline/dags/{dagId}/runs` – list runs for a DAG with filters (state, date range, pagination)
+  * `GET /pipeline/runs/{runId}` – get run details
+  * `POST /pipeline/dags/{dagId}/trigger` – trigger a new DAG run with optional config payload
+  * `POST /pipeline/dags/{dagId}/pause` – pause or resume a DAG
+  * `POST /pipeline/dags/{dagId}/stopRun` – stop an active DAG run
+  * `PATCH /pipeline/dags/{dagId}/settings` – update DAG settings (schedule, retries, timezone)
+  * `POST /pipeline/dags/sync` – sync DAGs from Airflow to local database
+  * `GET /pipeline/runs/{runId}/graph` – get task graph for visualization
+  * `GET /pipeline/runs/{runId}/gantt` – get Gantt chart data for task timeline
+  * `GET /pipeline/runs/{runId}/logs` – get logs for a run or specific task
 * These endpoints are proxies around Airflow REST or DB level operations, sometimes updating mirrored metadata in `pipeline_*` tables.
 * They support UC5 by enabling monitoring and control of data and training pipelines from within the web app.
 
@@ -705,10 +715,7 @@ MAPE is computed separately for each horizon (7D, 15D, 30D) and stored per ticke
 
 The Models page displays these values in columns labeled MAPE 7D, MAPE 15D, and MAPE 30D, using color coding based on thresholds: green for values below 5 percent, yellow for values between 5 and 10 percent, and red for values above 10 percent.
 
-These MAPE values can be interpreted as average relative errors for the given horizon; lower values indicate more reliable forecasts. They can also be mapped to status labels such as excellent, acceptable, and needs improvement as reflected by color codes on the Models and Stock Detail pages.
-
-**Note:** Although MAPE is widely used as a percentage based error metric, it has a known limitation when the true target value $y_i$ is equal to zero or extremely close to zero, because the term $|y_i - \hat{y}_i| / |y_i|$ becomes undefined or numerically unstable. In our setting, this situation can theoretically occur, since the target represents percentage price changes and some values may be near zero. 
-In this report, we acknowledge this limitation but use the standard MAPE implementation without additional corrections, in order to keep the evaluation pipeline simple and comparable across models. A more robust treatment, for example clipping the denominator away from zero or switching to alternative metrics such as SMAPE, is left for future work and is outside the scope of this assignment.
+ These MAPE values can be interpreted as average relative errors for the given horizon; lower values indicate more reliable forecasts. They can also be mapped to status labels such as excellent, acceptable, and needs improvement as reflected by color codes on the Models and Stock Detail pages.
 
 ## 6.6 Link between mathematics and UI
 
