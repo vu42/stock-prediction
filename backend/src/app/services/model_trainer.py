@@ -27,6 +27,7 @@ import matplotlib.pyplot as plt
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.models import Stock, StockPredictionPoint, StockPredictionSummary
+from app.schemas.training import ModelsConfig
 from app.services.data_fetcher import load_stock_data_from_db
 
 # Standard horizons for prediction summaries
@@ -155,38 +156,96 @@ def create_feature_matrix(
     return np.array(features), np.array(targets)
 
 
-def build_ensemble_model() -> dict:
+def build_ensemble_model(models_config: ModelsConfig | None = None) -> dict:
     """
     Build ensemble of scikit-learn models.
 
+    Args:
+        models_config: Optional ModelsConfig from training_config table.
+                       If provided, uses those values; otherwise falls back to settings.
+
     Returns:
-        Dictionary of models
+        Dictionary of models (only enabled ones if config is provided)
     """
-    models = {
-        "random_forest": RandomForestRegressor(
-            n_estimators=settings.random_forest_estimators,
-            max_depth=10,
+    models = {}
+
+    # Random Forest
+    rf_enabled = True
+    rf_n_estimators = settings.random_forest_estimators
+    rf_max_depth = 10
+    if models_config and models_config.random_forest:
+        rf_enabled = models_config.random_forest.enabled
+        if models_config.random_forest.n_estimators is not None:
+            rf_n_estimators = models_config.random_forest.n_estimators
+        if models_config.random_forest.max_depth is not None:
+            rf_max_depth = models_config.random_forest.max_depth
+
+    if rf_enabled:
+        models["random_forest"] = RandomForestRegressor(
+            n_estimators=rf_n_estimators,
+            max_depth=rf_max_depth,
             min_samples_split=5,
             min_samples_leaf=2,
             random_state=42,
             n_jobs=-1,
-        ),
-        "gradient_boosting": GradientBoostingRegressor(
-            n_estimators=settings.gradient_boosting_estimators,
-            learning_rate=0.1,
-            max_depth=6,
+        )
+
+    # Gradient Boosting
+    gb_enabled = True
+    gb_n_estimators = settings.gradient_boosting_estimators
+    gb_learning_rate = 0.1
+    gb_max_depth = 6
+    if models_config and models_config.gradient_boosting:
+        gb_enabled = models_config.gradient_boosting.enabled
+        if models_config.gradient_boosting.n_estimators is not None:
+            gb_n_estimators = models_config.gradient_boosting.n_estimators
+        if models_config.gradient_boosting.learning_rate is not None:
+            gb_learning_rate = models_config.gradient_boosting.learning_rate
+        if models_config.gradient_boosting.max_depth is not None:
+            gb_max_depth = models_config.gradient_boosting.max_depth
+
+    if gb_enabled:
+        models["gradient_boosting"] = GradientBoostingRegressor(
+            n_estimators=gb_n_estimators,
+            learning_rate=gb_learning_rate,
+            max_depth=gb_max_depth,
             min_samples_split=5,
             min_samples_leaf=2,
             random_state=42,
-        ),
-        "svr": SVR(
+        )
+
+    # SVR
+    svr_enabled = True
+    svr_c = settings.svr_c
+    svr_gamma = "scale"
+    svr_epsilon = 0.1
+    if models_config and models_config.svr:
+        svr_enabled = models_config.svr.enabled
+        if models_config.svr.c is not None:
+            svr_c = models_config.svr.c
+        if models_config.svr.gamma is not None:
+            svr_gamma = models_config.svr.gamma
+        if models_config.svr.epsilon is not None:
+            svr_epsilon = models_config.svr.epsilon
+
+    if svr_enabled:
+        models["svr"] = SVR(
             kernel="rbf",
-            C=settings.svr_c,
-            gamma="scale",
-            epsilon=0.1,
-        ),
-        "ridge": Ridge(alpha=settings.ridge_alpha, random_state=42),
-    }
+            C=svr_c,
+            gamma=svr_gamma,
+            epsilon=svr_epsilon,
+        )
+
+    # Ridge
+    ridge_enabled = True
+    ridge_alpha = settings.ridge_alpha
+    if models_config and models_config.ridge:
+        ridge_enabled = models_config.ridge.enabled
+        if models_config.ridge.alpha is not None:
+            ridge_alpha = models_config.ridge.alpha
+
+    if ridge_enabled:
+        models["ridge"] = Ridge(alpha=ridge_alpha, random_state=42)
 
     return models
 
@@ -195,6 +254,7 @@ def train_prediction_model(
     db: Session,
     stock_symbol: str,
     continue_training: bool | None = None,
+    models_config: ModelsConfig | None = None,
 ) -> bool:
     """
     Train ensemble model for stock prediction.
@@ -203,6 +263,7 @@ def train_prediction_model(
         db: Database session
         stock_symbol: Stock symbol to train
         continue_training: If True, load existing model and continue training
+        models_config: Optional ModelsConfig from training_config table
 
     Returns:
         True if successful
@@ -321,7 +382,7 @@ def train_prediction_model(
         # Build new models if loading failed
         if models is None:
             logger.info(f"[{stock_symbol}] Building new ensemble models...")
-            models = build_ensemble_model()
+            models = build_ensemble_model(models_config)
 
         # Train each model
         logger.info(f"[{stock_symbol}] Training ensemble models...")
