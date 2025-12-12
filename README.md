@@ -82,6 +82,10 @@ docker exec stock-prediction-api python -m scripts.seed_mock_prediction_points
 
 # 5. Access API documentation
 open http://localhost:8000/docs
+
+# 6. Configure MinIO for public access (required for evaluation plots)
+mc alias set local http://localhost:9000 minioadmin minioadmin
+mc anonymous set download local/stock-prediction-artifacts
 ```
 
 **Services Started:**
