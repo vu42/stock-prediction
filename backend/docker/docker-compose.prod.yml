@@ -143,21 +143,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: >
-      bash -c "
-        airflow db migrate &&
-        echo 'Creating API user for system communication...' &&
-        airflow users create \
-          --username $${AIRFLOW_API_USER} \
-          --password $${AIRFLOW_API_PASSWORD} \
-          --firstname API \
-          --lastname Service \
-          --role Admin \
-          --email api@stockprediction.local || echo 'User may already exist' &&
-        echo 'Starting Airflow webserver and scheduler...' &&
-        airflow webserver --port 8080 &
-        exec airflow scheduler
-      "
+    command: bash -c "airflow db migrate && airflow users create --username $${AIRFLOW_API_USER} --password $${AIRFLOW_API_PASSWORD} --firstname API --lastname Service --role Admin --email api@stockprediction.local || true && (airflow webserver --port 8080 &) && exec airflow scheduler"
     restart: unless-stopped
 
 volumes:

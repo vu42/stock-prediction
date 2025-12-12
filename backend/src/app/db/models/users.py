@@ -75,7 +75,7 @@ class User(Base, TimestampMixin):
         back_populates="owner",
         foreign_keys="ExperimentRun.owner_user_id",
     )
-    saved_stocks: Mapped[list["UserSavedStock"]] = relationship(
+    saved_stocks = relationship(
         "UserSavedStock",
         back_populates="user",
         cascade="all, delete-orphan",

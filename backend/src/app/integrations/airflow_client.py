@@ -1,9 +1,9 @@
 """
 Airflow REST API client.
-Wraps Airflow 3.x REST API v2 for DAG management.
+Wraps Airflow 2.x REST API v1 for DAG management.
 """
 
-import time
+import base64
 from datetime import datetime
 from typing import Any
 
@@ -17,70 +17,33 @@ logger = get_logger(__name__)
 
 
 class AirflowClient:
-    """Client for Airflow 3.x REST API v2."""
+    """Client for Airflow 2.x REST API v1 with Basic Auth."""
 
     def __init__(self):
         """Initialize the Airflow client."""
         self.base_url = settings.airflow_base_url.rstrip("/")
-        self.api_url = f"{self.base_url}/api/v2"
-        self.auth_url = f"{self.base_url}/auth/token"
+        self.api_url = f"{self.base_url}/api/v1"
         self.username = settings.airflow_username
         self.password = settings.airflow_password
         
-        # Token cache
-        self._access_token: str | None = None
-        self._token_expires_at: float = 0
-
-    def _get_access_token(self) -> str:
-        """
-        Get JWT access token from Airflow auth endpoint.
-        Caches the token and refreshes when expired.
-        """
-        # Check if cached token is still valid (with 60s buffer)
-        if self._access_token and time.time() < (self._token_expires_at - 60):
-            return self._access_token
-        
-        try:
-            with httpx.Client(timeout=30.0) as client:
-                response = client.post(
-                    self.auth_url,
-                    json={
-                        "username": self.username,
-                        "password": self.password,
-                    },
-                )
-                response.raise_for_status()
-                data = response.json()
-                
-                self._access_token = data["access_token"]
-                # Token typically valid for 24 hours, cache for 23 hours
-                self._token_expires_at = time.time() + (23 * 60 * 60)
-                
-                logger.debug("Obtained new Airflow access token")
-                return self._access_token
-                
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Failed to get Airflow token: {e.response.status_code} - {e.response.text}")
-            raise ExternalServiceError("Airflow", f"Authentication failed: {e}")
-        except Exception as e:
-            logger.error(f"Airflow authentication error: {e}")
-            raise ExternalServiceError("Airflow", f"Authentication error: {e}")
+        # Create Basic Auth header
+        credentials = f"{self.username}:{self.password}"
+        encoded = base64.b64encode(credentials.encode()).decode()
+        self._auth_header = f"Basic {encoded}"
 
     def _get_client(self) -> httpx.Client:
-        """Get an HTTP client with Bearer token auth."""
-        token = self._get_access_token()
+        """Get an HTTP client with Basic Auth."""
         return httpx.Client(
             base_url=self.api_url,
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": self._auth_header},
             timeout=30.0,
         )
 
     async def _get_async_client(self) -> httpx.AsyncClient:
-        """Get an async HTTP client with Bearer token auth."""
-        token = self._get_access_token()
+        """Get an async HTTP client with Basic Auth."""
         return httpx.AsyncClient(
             base_url=self.api_url,
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": self._auth_header},
             timeout=30.0,
         )
 
@@ -161,10 +124,8 @@ class AirflowClient:
         Returns:
             DAG run info
         """
-        # Airflow API v2 requires logical_date field
-        payload: dict[str, Any] = {
-            "logical_date": None,  # Use current time
-        }
+        # Airflow API v1 payload format
+        payload: dict[str, Any] = {}
         if run_id:
             payload["dag_run_id"] = run_id
         if conf:

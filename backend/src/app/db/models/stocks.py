@@ -72,7 +72,7 @@ class Stock(Base, TimestampMixin):
         back_populates="stock",
         cascade="all, delete-orphan",
     )
-    saved_by_users: Mapped[list["UserSavedStock"]] = relationship(
+    saved_by_users = relationship(
         "UserSavedStock",
         back_populates="stock",
         cascade="all, delete-orphan",
@@ -311,15 +311,18 @@ class UserSavedStock(Base, TimestampMixin):
     """
 
     __tablename__ = "user_saved_stocks"
+    __table_args__ = (
+        UniqueConstraint("user_id", "stock_id", name="uq_user_saved_stock"),
+    )
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+    user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    stock_id: Mapped[int] = mapped_column(
+    stock_id = Column(
         BigInteger,
         ForeignKey("stocks.id", ondelete="CASCADE"),
         nullable=False,
@@ -327,10 +330,8 @@ class UserSavedStock(Base, TimestampMixin):
     )
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="saved_stocks")
-    stock: Mapped["Stock"] = relationship("Stock", back_populates="saved_by_users")
-
-    __table_args__ = (UniqueConstraint("user_id", "stock_id", name="uq_user_saved_stock"),)
+    user = relationship("User", back_populates="saved_stocks")
+    stock = relationship("Stock", back_populates="saved_by_users")
 
     def __repr__(self) -> str:
         return f"<UserSavedStock(user_id={self.user_id}, stock_id={self.stock_id})>"

@@ -45,6 +45,8 @@ class DAGDetailResponse(BaseModel):
     schedule_label: str | None = Field(None, alias="scheduleLabel")
     catchup: bool
     max_active_runs: int = Field(..., alias="maxActiveRuns")
+    default_retries: int = Field(0, alias="defaultRetries")
+    default_retry_delay_minutes: int = Field(5, alias="defaultRetryDelayMinutes")
 
     class Config:
         populate_by_name = True

@@ -96,8 +96,8 @@ mc anonymous set download local/stock-prediction-artifacts
 | API Docs | http://localhost:8000/docs | Swagger UI |
 | PostgreSQL | localhost:5432 | Database |
 | Redis | localhost:6379 | Task queue |
-| MinIO | http://localhost:9001 | S3 storage (admin: minioadmin/minioadmin) |
-| Airflow | http://localhost:8080 | DAG orchestration (admin/admin) |
+| MinIO | http://localhost:9001 | Object storage (admin: minioadmin/minioadmin) |
+| Airflow | http://localhost:8080 | DAG orchestration (airflow_api/AirflowApi@2025!) |
 
 **Useful Commands:**
 
@@ -143,7 +143,7 @@ VNDirect API → Data Crawler DAG → PostgreSQL
                                        ↓
                               ML Models (Ensemble)
                                        ↓
-                              Predictions → S3
+                              Predictions → MinIO
                                        ↓
                               REST API → Frontend
 ```
@@ -177,7 +177,7 @@ Key settings in `backend/.env`:
 | `REDIS_URL` | Redis for task queue |
 | `JWT_SECRET_KEY` | JWT signing key |
 | `SENDGRID_API_KEY` | Email notifications |
-| `S3_ENDPOINT_URL` | S3/MinIO for artifacts |
+| `S3_ENDPOINT_URL` | MinIO for artifacts |
 
 ### Airflow DAGs
 

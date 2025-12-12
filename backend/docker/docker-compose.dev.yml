@@ -105,9 +105,9 @@ services:
         condition: service_healthy
     command: python -m worker.main
 
-  # Airflow (for DAG runs)
+  # Airflow (for DAG runs) - Using Airflow 2.x for stability
   airflow-webserver:
-    image: apache/airflow:3.0.1-python3.11
+    image: apache/airflow:2.10.4-python3.11
     container_name: stock-prediction-airflow
     environment:
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
@@ -115,13 +115,13 @@ services:
       - AIRFLOW__CORE__FERNET_KEY=your-fernet-key-here
       - AIRFLOW__WEBSERVER__SECRET_KEY=your-webserver-secret
       - AIRFLOW__CORE__LOAD_EXAMPLES=false
-      - AIRFLOW__API__AUTH_BACKENDS=airflow.providers.fab.auth_manager.api.auth.backend.basic_auth,airflow.providers.fab.auth_manager.api.auth.backend.session
+      - AIRFLOW__API__AUTH_BACKENDS=airflow.api.auth.backend.basic_auth
       # Fixed API user credentials (for system-to-system communication)
       - AIRFLOW_API_USER=airflow_api
       - AIRFLOW_API_PASSWORD=AirflowApi@2025!
       - PYTHONPATH=/opt/airflow/backend/src
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/stock_prediction
-      - _PIP_ADDITIONAL_REQUIREMENTS=pydantic-settings httpx boto3 scikit-learn sendgrid bcrypt python-jose passlib matplotlib
+      - _PIP_ADDITIONAL_REQUIREMENTS=pydantic-settings httpx boto3 scikit-learn sendgrid bcrypt python-jose passlib matplotlib fastapi sqlalchemy psycopg2-binary
     ports:
       - "8080:8080"
     volumes:
@@ -131,21 +131,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: >
-      bash -c "
-        airflow db migrate &&
-        echo 'Creating API user...' &&
-        airflow users create \
-          --username $${AIRFLOW_API_USER} \
-          --password $${AIRFLOW_API_PASSWORD} \
-          --firstname API \
-          --lastname Service \
-          --role Admin \
-          --email api@stockprediction.local || echo 'User may already exist' &&
-        echo 'Starting Airflow...' &&
-        airflow webserver --port 8080 &
-        exec airflow scheduler
-      "
+    command: bash -c "airflow db migrate && airflow users create --username $${AIRFLOW_API_USER} --password $${AIRFLOW_API_PASSWORD} --firstname API --lastname Service --role Admin --email api@stockprediction.local || true && (airflow webserver --port 8080 &) && exec airflow scheduler"
 
 volumes:
   postgres_data:

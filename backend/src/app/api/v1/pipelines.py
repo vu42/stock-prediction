@@ -40,6 +40,28 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/pipeline", tags=["Pipelines"])
 
 
+def _extract_schedule_string(schedule_value: Any) -> str:
+    """
+    Extract schedule string from Airflow schedule_interval.
+    
+    Airflow 2.x returns schedule_interval as an object like:
+    {'__type': 'CronExpression', 'value': '0 17 * * *'}
+    
+    This helper extracts the actual cron string.
+    """
+    if schedule_value is None:
+        return "manual"
+    if isinstance(schedule_value, str):
+        return schedule_value
+    if isinstance(schedule_value, dict):
+        # Handle CronExpression object from Airflow 2.x
+        if "value" in schedule_value:
+            return schedule_value["value"]
+        if "__type" in schedule_value:
+            return schedule_value.get("value", "manual")
+    return str(schedule_value) if schedule_value else "manual"
+
+
 # ============================================================================
 # DAG Catalog Endpoints
 # ============================================================================
@@ -71,7 +93,7 @@ async def sync_dags_from_airflow(
                 # Update existing DAG
                 existing_dag.status = "paused" if airflow_dag.get("is_paused") else "active"
                 existing_dag.description = airflow_dag.get("description")
-                existing_dag.schedule_cron = airflow_dag.get("schedule_interval") or "manual"
+                existing_dag.schedule_cron = _extract_schedule_string(airflow_dag.get("schedule_interval"))
                 existing_dag.default_owner = ",".join(airflow_dag.get("owners", []))
                 existing_dag.default_tags = [t.get("name") for t in airflow_dag.get("tags", [])]
             else:
@@ -81,7 +103,7 @@ async def sync_dags_from_airflow(
                     name=dag_id.replace("_", " ").title(),
                     description=airflow_dag.get("description"),
                     status="paused" if airflow_dag.get("is_paused") else "active",
-                    schedule_cron=airflow_dag.get("schedule_interval") or "manual",
+                    schedule_cron=_extract_schedule_string(airflow_dag.get("schedule_interval")),
                     schedule_label=None,
                     default_owner=",".join(airflow_dag.get("owners", [])),
                     default_tags=[t.get("name") for t in airflow_dag.get("tags", [])],
@@ -151,7 +173,7 @@ async def list_dags(
                         name=dag_id.replace("_", " ").title(),
                         description=airflow_dag.get("description"),
                         status="paused" if airflow_dag.get("is_paused") else "active",
-                        scheduleCron=airflow_dag.get("schedule_interval") or "manual",
+                        scheduleCron=_extract_schedule_string(airflow_dag.get("schedule_interval")),
                         scheduleLabel=None,
                         nextRunAt=airflow_dag.get("next_dagrun"),
                         lastRunAt=last_run.get("start_date") if last_run else None,
@@ -219,18 +241,25 @@ async def get_dag(
         try:
             airflow_dag = airflow_client.get_dag(dag_id)
             
+            # Get default_args from DB if available
+            stmt = select(PipelineDAG).where(PipelineDAG.dag_id == dag_id)
+            db_dag = db.execute(stmt).scalar_one_or_none()
+            
+            # Prefer DB values over Airflow values (DB has user edits)
             return DAGDetailResponse(
                 dagId=airflow_dag.get("dag_id"),
-                name=airflow_dag.get("dag_id", "").replace("_", " ").title(),
+                name=db_dag.name if db_dag else airflow_dag.get("dag_id", "").replace("_", " ").title(),
                 description=airflow_dag.get("description"),
                 status="paused" if airflow_dag.get("is_paused") else "active",
-                owner=",".join(airflow_dag.get("owners", [])),
-                tags=[t.get("name") for t in airflow_dag.get("tags", [])],
-                timezone="Asia/Ho_Chi_Minh",
-                scheduleCron=airflow_dag.get("timetable_summary") or "manual",
+                owner=db_dag.default_owner if db_dag else ",".join(airflow_dag.get("owners", [])),
+                tags=db_dag.default_tags if db_dag and db_dag.default_tags else [t.get("name") for t in airflow_dag.get("tags", [])],
+                timezone=db_dag.timezone if db_dag else "Asia/Ho_Chi_Minh",
+                scheduleCron=db_dag.schedule_cron if db_dag else (_extract_schedule_string(airflow_dag.get("schedule_interval")) or airflow_dag.get("timetable_summary") or "manual"),
                 scheduleLabel=airflow_dag.get("timetable_description"),
-                catchup=False,
-                maxActiveRuns=airflow_dag.get("max_active_runs", 1),
+                catchup=db_dag.catchup if db_dag else False,
+                maxActiveRuns=db_dag.max_active_runs if db_dag else airflow_dag.get("max_active_runs", 1),
+                defaultRetries=db_dag.default_retries if db_dag else 0,
+                defaultRetryDelayMinutes=db_dag.default_retry_delay_minutes if db_dag else 5,
             )
             
         except ExternalServiceError:
@@ -264,6 +293,8 @@ async def get_dag(
         scheduleLabel=dag.schedule_label,
         catchup=dag.catchup,
         maxActiveRuns=dag.max_active_runs,
+        defaultRetries=dag.default_retries,
+        defaultRetryDelayMinutes=dag.default_retry_delay_minutes,
     )
 
 
@@ -276,8 +307,21 @@ async def trigger_dag_run(
 ):
     """
     Trigger a new DAG run via Airflow API.
+    Auto-unpauses the DAG if it's currently paused.
     """
     try:
+        # Check if DAG is paused and unpause if needed
+        dag_info = airflow_client.get_dag(dag_id)
+        if dag_info.get("is_paused"):
+            logger.info(f"DAG {dag_id} is paused, unpausing before trigger")
+            airflow_client.pause_dag(dag_id, paused=False)
+            
+            # Update local DB status
+            stmt = select(PipelineDAG).where(PipelineDAG.dag_id == dag_id)
+            local_dag = db.execute(stmt).scalar_one_or_none()
+            if local_dag:
+                local_dag.status = "active"
+        
         # Trigger DAG run via Airflow API
         conf = request.conf if request else None
         airflow_response = airflow_client.trigger_dag_run(dag_id, conf=conf)
@@ -298,7 +342,7 @@ async def trigger_dag_run(
                     name=dag_id.replace("_", " ").title(),
                     description=airflow_dag.get("description"),
                     status="paused" if airflow_dag.get("is_paused") else "active",
-                    schedule_cron=airflow_dag.get("timetable_summary") or "manual",
+                    schedule_cron=_extract_schedule_string(airflow_dag.get("schedule_interval")) or airflow_dag.get("timetable_summary") or "manual",
                     schedule_label=airflow_dag.get("timetable_description"),
                     default_owner=",".join(airflow_dag.get("owners", [])),
                     default_tags=[t.get("name") for t in airflow_dag.get("tags", [])],
@@ -856,5 +900,7 @@ async def update_dag_settings(
         scheduleLabel=dag.schedule_label,
         catchup=dag.catchup,
         maxActiveRuns=dag.max_active_runs,
+        defaultRetries=dag.default_retries,
+        defaultRetryDelayMinutes=dag.default_retry_delay_minutes,
     )
 
