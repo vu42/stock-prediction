@@ -99,6 +99,11 @@ class Settings(BaseSettings):
         alias="S3_BUCKET_NAME",
     )
     s3_region: str = Field(default="us-east-1", alias="S3_REGION")
+    s3_public_url: str | None = Field(
+        default=None,
+        alias="S3_PUBLIC_URL",
+        description="Public URL for S3/MinIO accessible from browser (e.g., http://localhost:9000)",
+    )
 
     # =========================================================================
     # EMAIL - SendGrid

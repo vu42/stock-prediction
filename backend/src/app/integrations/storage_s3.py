@@ -179,12 +179,19 @@ class S3StorageClient:
         """
         Get the URL for an S3 object.
 
+        For MinIO: uses s3_public_url if set (browser-accessible),
+        otherwise falls back to s3_endpoint_url.
+
         Args:
             key: S3 object key
 
         Returns:
-            S3 URL
+            S3 URL accessible from browser
         """
+        # Prefer public URL for browser access (e.g., http://localhost:9000)
+        if settings.s3_public_url:
+            return f"{settings.s3_public_url}/{self._bucket}/{key}"
+        # Fall back to endpoint URL (may be internal Docker URL)
         if settings.s3_endpoint_url:
             return f"{settings.s3_endpoint_url}/{self._bucket}/{key}"
         return f"https://{self._bucket}.s3.{settings.s3_region}.amazonaws.com/{key}"
