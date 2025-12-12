@@ -38,6 +38,11 @@ from app.services.stock_service import (
     seed_vn30_stocks,
     update_stock,
 )
+from app.services.user_stocks import (
+    add_stock_to_list,
+    get_user_saved_stocks,
+    remove_stock_from_list,
+)
 
 __all__ = [
     # Data fetcher
@@ -71,4 +76,8 @@ __all__ = [
     "delete_stock",
     "get_stock_detail",
     "seed_vn30_stocks",
+    # User stocks
+    "get_user_saved_stocks",
+    "add_stock_to_list",
+    "remove_stock_from_list",
 ]

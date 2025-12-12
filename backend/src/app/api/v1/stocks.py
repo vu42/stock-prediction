@@ -2,23 +2,30 @@
 Stock API endpoints.
 """
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.errors import NotFoundError
+from app.core.security import CurrentUser
 from app.db.session import get_db
+from app.services.stock_service import get_stock_by_ticker
 from app.schemas import (
     MarketTableResponse,
+    MyListResponse,
     StockCreate,
     StockResponse,
     StockUpdate,
     TopPickResponse,
 )
 from app.services import (
+    add_stock_to_list,
     create_stock,
     get_all_stocks,
     get_market_table_data,
     get_stock_detail,
     get_top_picks,
+    get_user_saved_stocks,
+    remove_stock_from_list,
     update_stock,
 )
 
@@ -43,25 +50,137 @@ async def get_top_stock_picks(
     return [TopPickResponse(**pick) for pick in picks]
 
 
+@router.get("/my-list", response_model=list[MyListResponse])
+async def get_my_list(
+    current_user: CurrentUser,
+    limit: int = Query(5, ge=1, le=20),
+    horizon_days: int = Query(7, alias="horizonDays"),
+    db: Session = Depends(get_db),
+):
+    """
+    Get current user's saved stocks (My List).
+    
+    - **limit**: Number of stocks to return (default 5, max 20)
+    - **horizonDays**: Prediction horizon in days (default 7)
+    - Requires authentication
+    """
+    saved_stocks = get_user_saved_stocks(
+        db,
+        user_id=str(current_user.id),
+        limit=limit,
+        horizon_days=horizon_days,
+    )
+    return [MyListResponse(**stock) for stock in saved_stocks]
+
+
+@router.post("/my-list/{ticker}", status_code=status.HTTP_201_CREATED)
+async def add_stock_to_my_list(
+    ticker: str,
+    current_user: CurrentUser,
+    db: Session = Depends(get_db),
+):
+    """
+    Add a stock to current user's saved list (My List).
+    
+    - **ticker**: Stock ticker symbol (e.g., "FPT", "VCB")
+    - Requires authentication
+    
+    Returns:
+        Success message with stock details
+    """
+    try:
+        # Get stock by ticker
+        stock = get_stock_by_ticker(db, ticker)
+        
+        # Add to user's list
+        add_stock_to_list(
+            db,
+            user_id=str(current_user.id),
+            stock_id=stock.id,
+        )
+        
+        return {
+            "message": f"Stock {ticker} added to your list",
+            "ticker": stock.ticker,
+            "name": stock.name,
+        }
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e.message),
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(e),
+        )
+
+
+@router.delete("/my-list/{ticker}", status_code=status.HTTP_200_OK)
+async def remove_stock_from_my_list(
+    ticker: str,
+    current_user: CurrentUser,
+    db: Session = Depends(get_db),
+):
+    """
+    Remove a stock from current user's saved list (My List).
+    
+    - **ticker**: Stock ticker symbol (e.g., "FPT", "VCB")
+    - Requires authentication
+    
+    Returns:
+        Success message
+    """
+    try:
+        # Get stock by ticker
+        stock = get_stock_by_ticker(db, ticker)
+        
+        # Remove from user's list
+        removed = remove_stock_from_list(
+            db,
+            user_id=str(current_user.id),
+            stock_id=stock.id,
+        )
+        
+        if not removed:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Stock {ticker} is not in your list",
+            )
+        
+        return {
+            "message": f"Stock {ticker} removed from your list",
+        }
+    except NotFoundError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e.message),
+        )
+
+
 @router.get("/market-table", response_model=MarketTableResponse)
 async def get_market_table(
     search: str | None = Query(None),
     sector: str | None = Query(None),
-    sort_by: str = Query("change_7d", alias="sortBy"),
+    sort_by: str = Query(
+        "change_7d",
+        alias="sortBy",
+        regex="^(change_7d|change_15d|change_30d|price|predicted_change_7d)$",
+    ),
     sort_dir: str = Query("desc", regex="^(asc|desc)$", alias="sortDir"),
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100, alias="pageSize"),
+    page_size: int = Query(10, ge=1, le=100, alias="pageSize"),
     db: Session = Depends(get_db),
 ):
     """
     Get market table data with search, filter, sort, and pagination.
     
     - **search**: Search string for ticker/name
-    - **sector**: Filter by sector
-    - **sortBy**: Sort column (change_1d, change_3d, change_7d, price)
+    - **sector**: Filter by sector (optional)
+    - **sortBy**: Sort column (change_7d, change_15d, change_30d, price, predicted_change_7d)
     - **sortDir**: Sort direction (asc, desc)
-    - **page**: Page number
-    - **pageSize**: Items per page
+    - **page**: Page number (default: 1)
+    - **pageSize**: Items per page (default: 10, max: 100)
     """
     result = get_market_table_data(
         db,

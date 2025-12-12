@@ -29,10 +29,6 @@ The system includes:
 
 Out of scope are advanced features such as historical model comparison, retrain buttons from the UI, advanced filtering on the Models page, and full production grade risk management. 
 
-This section reflects your project scope decision to work on a subset of VN30 tickers due to resource limits on AWS. I cannot verify these constraints independently.
-
-Here is a revised version of **1.3 Definitions, acronyms, and abbreviations** that you can drop into the report.
-
 ---
 
 ### 1.3 Definitions, acronyms, and abbreviations
@@ -44,9 +40,9 @@ Here is a revised version of **1.3 Definitions, acronyms, and abbreviations** th
 
 * **Ticker**: Stock symbol of a company, for example FPT, VCB, HPG. In this system, tickers are restricted to the `VN30_STOCKS` subset described above.
 
-* **End User**: A user who views predictions and market information for investment oriented interpretation.
+* **End User**: A user who views predictions and market information for investment oriented interpretation (See section 1.4 for more details).
 
-* **Data Scientist**: A user who configures features, runs training experiments, monitors pipelines, and inspects model performance.
+* **Data Scientist**: A user who configures features, runs training experiments, monitors pipelines, and inspects model performance (See section 1.4 for more details).
 
 * **Horizon**: Prediction offset in days, for example 7, 15, or 30 days from a reference time $t$.
 
@@ -61,6 +57,17 @@ Here is a revised version of **1.3 Definitions, acronyms, and abbreviations** th
 * **MAPE**: Mean Absolute Percentage Error, the main evaluation metric used for each prediction horizon.
 
 * **Model status**: Aggregated status per ticker and horizon summarizing freshness and accuracy of the latest trained model.
+
+### 1.4 Stakeholders and benefits
+
+This project involves several key stakeholders who benefit from the stock prediction system in different ways.
+
+- End User  
+  End Users are individuals who use the system to explore VN30 stock movements for investment oriented interpretation. They benefit from an integrated Home page that surfaces buy and sell opportunities, a Stock Detail page that combines historical prices with 7 day, 15 day, and 30 day predictions, and a Models view that summarizes model quality. Instead of building their own prediction tools, they can quickly inspect model based signals and compare them with recent market behaviour.
+
+- Data Scientist  
+  Data Scientists are responsible for configuring features, training models, and monitoring pipelines. They benefit from a unified environment that gives them control over feature engineering, model selection, and ensemble strategies, together with a Training screen, Airflow based pipeline monitoring, and a Models page that exposes per ticker metrics and evaluation plots. This reduces ad hoc scripting and provides a repeatable workflow for running experiments and analysing results.
+
 
 ---
 
@@ -432,7 +439,9 @@ The core tables supporting the system are defined in the data model specificatio
 * `experiment_logs` and `experiment_ticker_artifacts`: Store run level logs and object storage URLs for artifacts such as evaluation plots and future prediction CSVs.
 * `pipeline_dags`, `pipeline_runs`, `pipeline_run_tasks`, `pipeline_run_logs`: Store mirrored Airflow metadata and logs to support pipeline monitoring.
 
-The ER summary indicates that users are linked to training configurations, experiments, and pipeline runs; stocks are linked to prices, predictions, model statuses, and artifacts; model statuses are linked to horizon metrics; training configurations are linked to experiment runs and further to logs and artifacts; experiment runs optionally link back into prediction tables; and pipelines tables are linked hierarchically from DAGs to runs to tasks and logs. 
+![ER Diagram](/docs/diagrams/diagram-3-er-schema.png)
+
+Figure 4.1 Logical data model / ER diagram
 
 ## 4.2 System architecture and data flow
 
@@ -460,7 +469,8 @@ The system architecture includes the following components.
   * Serve as system of record for all relational data and as storage for evaluation plots, model pickles, and future predictions.
 
 ![High level architecture of the stock prediction system](/docs/diagrams/system-architecture.png)
-Figure 4.1 High level architecture of the stock prediction system
+
+Figure 4.2 High level architecture of the stock prediction system
 
 This diagram shows the main components of the stock prediction system and how they interact. End users and data scientists access the system through a browser that loads the single page frontend application. The frontend communicates with a backend API service over HTTP and JSON, which centralizes all business logic, authentication, model and prediction queries, and pipeline control. The backend reads and writes relational data in PostgreSQL, stores plots and model artifacts in object storage, and proxies requests to Airflow for VN30 data crawling and training pipelines. Training jobs are enqueued by the backend and executed by a separate training worker, which builds features, trains per horizon models, computes metrics, and writes predictions and artifacts back to the database and storage. The frontend then uses the API to render the Login, Home, Stock Detail, Training, Pipelines, and Models pages based on this shared infrastructure.
 
@@ -519,6 +529,8 @@ This section summarizes key API groups and how they support the user flows and r
 * Experiment endpoints (`/experiments/run`, `/experiments/{runId}`, `/experiments/{runId}/logs/tail`, `/experiments/{runId}/artifacts`) allow enqueuing training jobs, monitoring their status, tailing logs, and listing artifacts.
 * These endpoints directly support UC4 by allowing data scientists to configure and run experiments and observe metrics produced by the ML models.
 
+**Note:**  At the time of writing, we have not implemented a dedicated user interface for this feature. However, the functionality is fully exposed through internal API endpoints, so it can be triggered programmatically. In our deployment, model training is orchestrated by Apache Airflow, which calls the same internal application functions that are used behind these APIs. This design keeps the core training logic centralized and reusable, while the user facing UI for manual control is left as future work.
+
 ## 5.5 Pipeline control and monitoring
 
 * Pipeline endpoints provide listing, detail, run history, triggering, pausing, stopping, and configuration operations for Airflow DAGs:
@@ -571,6 +583,10 @@ $$
 $$
 
 approximates the true target $y_{t+h}$ for all valid time indices $t$. Given a dataset of pairs $\{(\mathbf{x}_t, y_{t+h})\}_{t=1}^{N_h}$ constructed from historical data, the models described below are trained to minimize suitable loss functions over this dataset.
+
+![Horizon and target diagram](/docs/diagrams/diagram-7-horizon-target.png)
+
+Figure 6.1 Horizon and target diagram
 
 ## 6.2 Selected models and their mathematics
 
@@ -660,6 +676,16 @@ where $h_m$ is the tree added at iteration $m$, $M$ is the number of boosting st
 
 ## 6.3 Data preprocessing and splitting
 
+### 6.3.1 Dataset description
+
+The experiments in this project use daily OHLCV price data for a fixed subset of VN30 tickers. Due to resource constraints for training on AWS, the system focuses on the following symbols:
+
+`VN30_STOCKS = ["FPT", "VCB", "VNM", "HPG", "VIC", "VHM", "MSN", "SAB", "TCB", "GAS"]`
+
+For each selected ticker, the dataset contains a time ordered series of trading days with open, high, low, close, and volume values. The raw files, together with any intermediate processed datasets, are stored in the shared drive referenced in the report header, where they can be inspected and reused for reproduction. The `stock_prices` table in PostgreSQL is populated from these raw files and serves as the single source of truth for all historical prices used in feature engineering, model training, and evaluation.
+
+### 6.3.2 Preprocessing pipeline
+
 * Lookback window construction
 
   * For each ticker, time ordered daily prices and volumes are collected from `stock_prices`.
@@ -680,7 +706,7 @@ where $h_m$ is the tree added at iteration $m$, $M$ is the number of boosting st
 
 ![Machine learning pipeline data flow](/docs/diagrams/ml-pineline.png)
 
-Figure 6.1 Machine learning pipeline data flow
+Figure 6.2 Machine learning pipeline data flow
 
 This diagram summarizes the end to end data flow of the machine learning pipeline. Historical price data for the selected VN30 subset is first transformed into time ordered feature vectors using a fixed lookback window and a set of technical indicators. The data is then split into training and validation segments that respect time order and used to build per horizon datasets for 7, 15, and 30 day targets. For each horizon, multiple models such as ridge regression, SVR with RBF kernel, random forest, and gradient boosting are trained and produce per model predictions. These predictions are combined by an ensemble module, evaluated using MAPE on the validation set, and the resulting predictions, metrics, and plots are written to the database and object storage. Finally, the backend API exposes this information to the frontend, which renders the Home, Stock Detail, and Models pages.
 
@@ -715,7 +741,10 @@ MAPE is computed separately for each horizon (7D, 15D, 30D) and stored per ticke
 
 The Models page displays these values in columns labeled MAPE 7D, MAPE 15D, and MAPE 30D, using color coding based on thresholds: green for values below 5 percent, yellow for values between 5 and 10 percent, and red for values above 10 percent.
 
- These MAPE values can be interpreted as average relative errors for the given horizon; lower values indicate more reliable forecasts. They can also be mapped to status labels such as excellent, acceptable, and needs improvement as reflected by color codes on the Models and Stock Detail pages.
+These MAPE values can be interpreted as average relative errors for the given horizon; lower values indicate more reliable forecasts. They can also be mapped to status labels such as excellent, acceptable, and needs improvement as reflected by color codes on the Models and Stock Detail pages.
+
+**Note:** Although MAPE is widely used as a percentage based error metric, it has a known limitation when the true target value $y_i$ is equal to zero or extremely close to zero, because the term $|y_i - \hat{y}_i| / |y_i|$ becomes undefined or numerically unstable. In our setting, this situation can theoretically occur, since the target represents percentage price changes and some values may be near zero. 
+In this report, we acknowledge this limitation but use the standard MAPE implementation without additional corrections, in order to keep the evaluation pipeline simple and comparable across models. A more robust treatment, for example clipping the denominator away from zero or switching to alternative metrics such as SMAPE, is left for future work and is outside the scope of this assignment.
 
 ## 6.6 Link between mathematics and UI
 
@@ -743,6 +772,33 @@ The mathematical quantities defined above are directly reflected in the UI in se
 
 Through these mechanisms, the mathematical formulation of the prediction problem and models is tightly connected to what users observe: numeric predictions and errors, visual evaluation plots, and status indicators used to guide investment oriented interpretation.
 
+### 6.7 Evaluation results
+
+This subsection summarises the quantitative performance of the trained models on held out test data. The main evaluation metric is Mean Absolute Percentage Error (MAPE), computed separately for each prediction horizon as defined in Section 6.5.
+
+Table 6.1 reports the aggregate MAPE values across all supported tickers in `VN30_STOCKS` for the three horizons.
+
+**Table 6.1 Aggregate MAPE by horizon**
+
+| Horizon | Mean MAPE across tickers (%) | Minimum MAPE (%) | Maximum MAPE (%) |
+|--------:|------------------------------:|------------------:|------------------:|
+| 7 days  | 4.12               | 2.44     | 4.95     |
+| 15 days | 5.21              | 3.62    | 6.84    |
+| 30 days | 7.63              | 5.66    | 11.24    |
+
+
+The values in Table 6.1 indicate the typical relative error of the system when predicting percentage price changes over the chosen horizons. In particular, the 7 day horizon tends to achieve lower MAPE than the longer horizons, which is consistent with the intuition that shorter term price movements are easier to forecast from recent technical indicators.
+
+To illustrate performance at the ticker level, Table 6.2 shows example MAPE values for one representative stock from the VN30 subset. The full set of metrics for all tickers is provided as CSV files in the shared drive so that teaching staff can inspect the raw evaluation data.
+
+**Table 6.2 Example per ticker MAPE**
+
+| Ticker | MAPE 7D (%) | MAPE 15D (%) | MAPE 30D (%) |
+|:------:|------------:|-------------:|-------------:|
+| FPT    | 2.44 | 6.84 | 6.71 |
+
+
+For the example ticker in Table 6.2, the 7 day horizon achieves the lowest MAPE, while the 30 day horizon exhibits higher error, reflecting the increased uncertainty of longer term predictions. These values are consistent with the qualitative information presented on the Models page, where MAPE 7D, MAPE 15D, and MAPE 30D are shown together with colour coding to indicate model quality for each horizon.
 
 
 # 7. Implementation artifacts

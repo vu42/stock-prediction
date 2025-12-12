@@ -38,7 +38,11 @@ class ChartDataResponse(BaseModel):
     """Chart data response schema."""
 
     points: list[ChartPoint]
-    range: str
+    historical_range: str = Field(..., alias="historicalRange")
+    prediction_range: str = Field(..., alias="predictionRange")
+
+    class Config:
+        populate_by_name = True
 
 
 class HorizonMetric(BaseModel):

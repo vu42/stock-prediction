@@ -20,6 +20,7 @@ from app.db.models.stocks import (
     StockPredictionPoint,
     StockPredictionSummary,
     StockPrice,
+    UserSavedStock,
 )
 from app.db.models.training import (
     ExperimentLog,
@@ -44,6 +45,7 @@ __all__ = [
     "ModelHorizonMetric",
     "FreshnessState",
     "CrawlMetadata",
+    "UserSavedStock",
     # Training
     "TrainingConfig",
     "ExperimentRun",

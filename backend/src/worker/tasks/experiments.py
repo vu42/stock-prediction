@@ -24,6 +24,7 @@ from app.db.models import (
 )
 from app.db.session import SessionLocal
 from app.integrations.storage_s3 import upload_model_artifact
+from app.schemas.training import TrainingConfigSchema
 from app.services.data_fetcher import fetch_stock_data, load_stock_data_from_db
 from app.services.model_trainer import (
     evaluate_model,
@@ -79,6 +80,17 @@ def run_training_experiment(run_id: str) -> dict:
         # Get config
         config = run.config.config
         
+        # Parse config into TrainingConfigSchema to get typed models config
+        try:
+            training_config = TrainingConfigSchema(**config)
+            models_config = training_config.models
+            logger.info(f"Parsed training config with models: RF={models_config.random_forest.enabled}, "
+                       f"GB={models_config.gradient_boosting.enabled}, SVR={models_config.svr.enabled}, "
+                       f"Ridge={models_config.ridge.enabled}")
+        except Exception as e:
+            logger.warning(f"Could not parse training config, using defaults: {e}")
+            models_config = None
+        
         # Determine stocks to process
         if config.get("universe", {}).get("useAllVn30"):
             stock_symbols = settings.vn30_stocks
@@ -126,7 +138,7 @@ def run_training_experiment(run_id: str) -> dict:
                 
                 # Step 2: Train model
                 log_to_experiment(db, run_id, "INFO", f"[{stock_symbol}] Training model...")
-                train_result = train_prediction_model(db, stock_symbol)
+                train_result = train_prediction_model(db, stock_symbol, models_config=models_config)
                 
                 if not train_result:
                     log_to_experiment(

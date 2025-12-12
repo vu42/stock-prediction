@@ -72,6 +72,11 @@ class Stock(Base, TimestampMixin):
         back_populates="stock",
         cascade="all, delete-orphan",
     )
+    saved_by_users: Mapped[list["UserSavedStock"]] = relationship(
+        "UserSavedStock",
+        back_populates="stock",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Stock(id={self.id}, ticker={self.ticker}, name={self.name})>"
@@ -297,3 +302,35 @@ class CrawlMetadata(Base):
 
     def __repr__(self) -> str:
         return f"<CrawlMetadata(symbol={self.stock_symbol}, last_data={self.last_data_date})>"
+
+
+class UserSavedStock(Base, TimestampMixin):
+    """
+    User's saved stocks (watchlist/my list).
+    Maps to SPECS.md requirement for "My List" feature.
+    """
+
+    __tablename__ = "user_saved_stocks"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    stock_id: Mapped[int] = mapped_column(
+        BigInteger,
+        ForeignKey("stocks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="saved_stocks")
+    stock: Mapped["Stock"] = relationship("Stock", back_populates="saved_by_users")
+
+    __table_args__ = (UniqueConstraint("user_id", "stock_id", name="uq_user_saved_stock"),)
+
+    def __repr__(self) -> str:
+        return f"<UserSavedStock(user_id={self.user_id}, stock_id={self.stock_id})>"

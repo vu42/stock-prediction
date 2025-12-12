@@ -15,14 +15,14 @@ router = APIRouter(tags=["Predictions"])
 @router.get("/stocks/{ticker}/predictions", response_model=PredictionResponse)
 async def get_predictions_for_stock(
     ticker: str,
-    horizons: str = Query("3,7,15,30"),
+    horizons: str = Query("7,15,30"),
     db: Session = Depends(get_db),
 ):
     """
     Get predicted % change for specified horizons.
     
     - **ticker**: Stock ticker symbol
-    - **horizons**: Comma-separated list of horizon days (e.g., "3,7,15,30")
+    - **horizons**: Comma-separated list of horizon days (e.g., "7,15,30")
     """
     horizon_list = [int(h.strip()) for h in horizons.split(",")]
     result = get_stock_predictions(db, ticker, horizons=horizon_list)
@@ -32,16 +32,20 @@ async def get_predictions_for_stock(
 @router.get("/stocks/{ticker}/chart", response_model=ChartDataResponse)
 async def get_chart_for_stock(
     ticker: str,
-    range_param: str = Query("7d", alias="range", regex="^(3d|7d|15d|30d)$"),
+    historical_range: str = Query("30d", alias="historicalRange", regex="^(15d|30d|60d|90d)$"),
+    prediction_range: str = Query("7d", alias="predictionRange", regex="^(7d|15d|30d)$"),
     db: Session = Depends(get_db),
 ):
     """
     Get historical and predicted price data for chart.
     
     - **ticker**: Stock ticker symbol
-    - **range**: Chart range (3d, 7d, 15d, 30d)
+    - **historicalRange**: Historical data range (15d, 30d, 60d, 90d). Default: 30d
+    - **predictionRange**: Prediction horizon range (7d, 15d, 30d). Default: 7d
     """
-    result = get_chart_data(db, ticker, range_param=range_param)
+    result = get_chart_data(
+        db, ticker, historical_range=historical_range, prediction_range=prediction_range
+    )
     return ChartDataResponse(**result)
 
 

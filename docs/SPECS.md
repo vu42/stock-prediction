@@ -100,13 +100,13 @@ Trần Hoàng Duy
   - My List: 5 stocks that the user has added to their list
 - Market Table:
   - Name, Symbol, Current Price, % Change 7D IRL, % Change 15D IRL, % Change 30D IRL, % Change 7D Predicted, 14D sparkline
-  - Each horizon cell shows `actual / predicted`, e.g. `+3.0% / +4.2%` (actual close vs model forecast)
-  -Search (by symbol, name), Filter (category/sector/My list), Sort ( % change IRL: increase, decrease, % change predicted: increase, decrease, price currently)
+  - Each horizon cell shows `percentage / price`, e.g. `+3.0% / 32000.125` (actual close vs actual close price)
+  - Search (by symbol, name), Filter (category/sector/My list), Sort ( % change IRL: increase, decrease, % change predicted: increase, decrease, price currently)
   - Row click → Stock Detail
 - States: loading (skeleton), empty (no matches), error (retry)
 - Acceptance:
   - Tab switches update lists
-  - Horizon columns clearly show `actual / predicted` % pairs
+  - Horizon columns clearly show `percentage / price` pairs
   - Table sort/search/filter works, row navigates to Stock Detail
 
 ### 2.4 End User – Stock Detail
@@ -284,9 +284,9 @@ Trần Hoàng Duy
     - Errors: 401 for unauthenticated, 4xx/5xx with { code, message }.
   - GET /api/v1/stocks/market-table
     - Purpose: populate market table with search/filter/sort and actual vs predicted %.
-    - Query params: search (string), sector (string, optional), sortBy (change_7d|change_15d|change_30d|price), sortDir (asc|desc), page, pageSize.
+    - Query params: search (string), sector (string, optional), sortBy (change_7d|change_15d|change_30d|price|predicted_change_7d), sortDir (asc|desc), page, pageSize.
     - Response:
-      - data: [ { symbol, name, sector, currentPrice, pctChange: { "7d": { actualPct, predictedPct }, "15d": { actualPct, predictedPct }, "30d": { actualPct, predictedPct } }, sparkline14d: [ { date, price } ] } ].
+      - data: [ { symbol, name, sector, currentPrice, pctChange: { "7d": { actualPct, actualPrice }, "15d": { actualPct, actualPrice }, "30d": { actualPct, actualPrice } }, predictedPctChange: {"7d": {predictedPct, predicedtPrice}}, sparkline14d: [ { date, price, isPredicted } ] } ].
       - meta: { total, page, pageSize, sectors: ["Technology", ...] }.
     - Errors: 4xx/5xx with { code, message } to support error state.
 - End User – Stock Detail:
@@ -300,7 +300,7 @@ Trần Hoàng Duy
     - Response: { ticker, horizons: { "7": { predictedChangePct }, "15": { predictedChangePct }, "30": { predictedChangePct } } }.
   - GET /api/v1/stocks/{ticker}/chart
     - Purpose: drive Price & Forecast chart with range tabs.
-    - Query params: range=7d|15d|30d.
+    - Query params: historicalRange=15d|30d|60d|90d, predictionRange=7d|15d|30d
     - Response: { points: [ { date, actualPrice, predictedPrice? } ], range }.
   - GET /api/v1/models/{ticker}/status
     - Purpose: fill Model status card (state, last updated, MAPE per horizon).
