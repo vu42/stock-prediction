@@ -76,6 +76,7 @@ services:
       - ../scripts:/app/scripts
       - ../migrations:/app/migrations
       - ../../output:/app/output
+      - ../../stock_data:/app/stock_data
     depends_on:
       postgres:
         condition: service_healthy

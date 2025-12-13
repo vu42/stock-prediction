@@ -60,10 +60,10 @@ docker-compose -f docker/docker-compose.dev.yml up -d
 # Run database migrations
 docker exec stock-prediction-api alembic upgrade head
 
-# Seed the database with test data
+# Seed the database with data
 docker exec stock-prediction-api python -m scripts.seed_users
 docker exec stock-prediction-api python -m scripts.seed_stocks
-docker exec stock-prediction-api python -m scripts.seed_mock_prices
+docker exec stock-prediction-api python -m scripts.seed_stock_prices
 docker exec stock-prediction-api python -m scripts.seed_mock_predictions
 docker exec stock-prediction-api python -m scripts.seed_mock_prediction_points
 

@@ -642,9 +642,20 @@ def predict_future_prices(
         dummy[:, 0] = future_predictions
         predicted_prices = scaler.inverse_transform(dummy)[:, 0]
 
-        # Create prediction dataframe
+        # Create prediction dataframe with business days only (skip weekends)
         last_date = pd.to_datetime(df["date"].iloc[-1])
-        future_dates = [last_date + timedelta(days=i + 1) for i in range(days_ahead)]
+        
+        def get_business_days(start_date, num_days):
+            """Generate future business days (skip Saturday=5, Sunday=6)."""
+            dates = []
+            current = start_date
+            while len(dates) < num_days:
+                current += timedelta(days=1)
+                if current.weekday() < 5:  # Monday=0 to Friday=4
+                    dates.append(current)
+            return dates
+        
+        future_dates = get_business_days(last_date, days_ahead)
 
         predictions_df = pd.DataFrame(
             {
@@ -708,26 +719,43 @@ def predict_future_prices(
             ):
                 day_offset = i + 1  # 1-indexed day offset
 
-                stmt = (
-                    pg_insert(StockPredictionPoint)
-                    .values(
-                        stock_id=stock.id,
-                        experiment_run_id=PyUUID(run_id) if run_id else None,
-                        horizon_days=day_offset,
-                        prediction_date=(
-                            pred_date.date()
-                            if hasattr(pred_date, "date")
-                            else pred_date
-                        ),
-                        predicted_price=round(float(pred_price), 4),
-                    )
-                    .on_conflict_do_update(
-                        constraint="uq_pred_point",
-                        set_={
-                            "predicted_price": round(float(pred_price), 4),
-                        },
-                    )
+                pred_date_val = (
+                    pred_date.date() if hasattr(pred_date, "date") else pred_date
                 )
+                
+                if run_id:
+                    # With experiment_run_id: use original constraint
+                    stmt = (
+                        pg_insert(StockPredictionPoint)
+                        .values(
+                            stock_id=stock.id,
+                            experiment_run_id=PyUUID(run_id),
+                            horizon_days=day_offset,
+                            prediction_date=pred_date_val,
+                            predicted_price=round(float(pred_price), 4),
+                        )
+                        .on_conflict_do_update(
+                            constraint="uq_pred_point",
+                            set_={"predicted_price": round(float(pred_price), 4)},
+                        )
+                    )
+                else:
+                    # Without experiment_run_id: use partial index for NULL
+                    stmt = (
+                        pg_insert(StockPredictionPoint)
+                        .values(
+                            stock_id=stock.id,
+                            experiment_run_id=None,
+                            horizon_days=day_offset,
+                            prediction_date=pred_date_val,
+                            predicted_price=round(float(pred_price), 4),
+                        )
+                        .on_conflict_do_update(
+                            index_elements=["stock_id", "horizon_days", "prediction_date"],
+                            index_where=StockPredictionPoint.experiment_run_id.is_(None),
+                            set_={"predicted_price": round(float(pred_price), 4)},
+                        )
+                    )
                 db.execute(stmt)
 
             db.commit()

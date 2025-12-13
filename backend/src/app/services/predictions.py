@@ -503,12 +503,13 @@ def get_chart_data(
     
     # Get prediction points for the prediction_range horizon
     # Predictions should be for future dates starting from the latest historical date
+    # horizon_days represents day offset (1=first day, 2=second day, etc.)
     pred_stmt = (
         select(StockPredictionPoint.prediction_date, StockPredictionPoint.predicted_price)
         .where(
             and_(
                 StockPredictionPoint.stock_id == stock.id,
-                StockPredictionPoint.horizon_days == prediction_days,
+                StockPredictionPoint.horizon_days <= prediction_days,  # Get all days up to horizon
                 StockPredictionPoint.prediction_date >= prediction_start_date,
                 StockPredictionPoint.prediction_date <= prediction_end_date,
             )

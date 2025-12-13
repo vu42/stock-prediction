@@ -2,6 +2,21 @@
 
 Machine learning system for predicting Vietnam's VN30 stock prices using ensemble models, FastAPI REST API, and Apache Airflow orchestration.
 
+## Live Demo
+
+The system is deployed and publicly accessible at:
+
+| | URL |
+|---|---|
+| **Application** | http://13.215.172.15 |
+
+**Demo Accounts:**
+- Data Scientist: `ds1` / `pass1234`
+- End User: `enduser1` / `pass1234`
+- Admin: `admin` / `pass1234`
+
+> **Note:** The server will be kept live until January 16, 2026
+
 ## Overview
 
 Automated stock prediction system featuring:
@@ -72,18 +87,22 @@ docker exec stock-prediction-api alembic revision --autogenerate -m "add_user_sa
 
 docker exec stock-prediction-api alembic upgrade head
 
-# 4. Seed VN30 stocks (optional)
+# 4. Seed data
 docker restart stock-prediction-api
 docker exec stock-prediction-api python -m scripts.seed_users
 docker exec stock-prediction-api python -m scripts.seed_stocks
-docker exec stock-prediction-api python -m scripts.seed_mock_prices
-docker exec stock-prediction-api python -m scripts.seed_mock_predictions
-docker exec stock-prediction-api python -m scripts.seed_mock_prediction_points
+docker exec stock-prediction-api python -m scripts.seed_stock_prices  # Load historical data from CSV files
+docker exec stock-prediction-api python -m scripts.seed_mock_predictions      # Mock predictions for demo
+docker exec stock-prediction-api python -m scripts.seed_mock_prediction_points # Mock prediction points for charts
 
-# 5. Access API documentation
+# 5. Train ML Models (will overwrite mock predictions with real ones)
+# Use app UI: Login with Data Scientist role → Pipelines → VN30 Model Training → Trigger Run
+# Training takes about 15 minutes to complete for all stocks
+
+# 6. Access API documentation
 open http://localhost:8000/docs
 
-# 6. Configure MinIO for public access (required for evaluation plots)
+# 7. Configure MinIO for public access (required for evaluation plots)
 mc alias set local http://localhost:9000 minioadmin minioadmin
 mc anonymous set download local/stock-prediction-artifacts
 ```
