@@ -74,6 +74,7 @@ services:
     volumes:
       - ../src:/app/src
       - ../scripts:/app/scripts
+      - ../migrations:/app/migrations
       - ../../output:/app/output
     depends_on:
       postgres:
