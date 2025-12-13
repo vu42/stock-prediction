@@ -41,7 +41,7 @@ plugins/
 # Large files
 *.h5
 *.pkl
-*.csv
+#*.csv
 # *.png
 *.jpg
 *.jpeg
