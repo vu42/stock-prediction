@@ -191,18 +191,21 @@ class ExperimentTickerArtifact(Base):
     Per-run, per-ticker artifact records.
     Includes metric JSON and URLs to evaluation/future plots,
     model/scaler binaries, and future_predictions CSVs.
+    
+    run_id is nullable to support Airflow DAG runs which don't have
+    an associated experiment run record.
     """
 
     __tablename__ = "experiment_ticker_artifacts"
-    __table_args__ = (
-        UniqueConstraint("run_id", "stock_id", name="uq_artifact_run_stock"),
-    )
+    # Unique constraints handled by partial indexes in migration:
+    # - uq_artifact_stock_null_run: (stock_id) WHERE run_id IS NULL
+    # - uq_artifact_run_stock_not_null: (run_id, stock_id) WHERE run_id IS NOT NULL
 
     id = Column(BigInteger, primary_key=True, autoincrement=True)
     run_id = Column(
         UUID(as_uuid=True),
         ForeignKey("experiment_runs.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,  # Nullable for Airflow DAG runs
     )
     stock_id = Column(
         BigInteger,

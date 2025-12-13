@@ -365,24 +365,31 @@ def train_prediction_model(
             f"[{stock_symbol}] Train: {len(X_train)}, Val: {len(X_val)}, Test: {len(X_test)}"
         )
 
-        # Load existing models or build new ones
-        models = None
+        # Build models based on config (always respects models_config)
+        logger.info(f"[{stock_symbol}] Building ensemble models based on config...")
+        models = build_ensemble_model(models_config)
+        
+        # Optionally load existing model weights for warm-starting (continue_training)
         if continue_training and os.path.exists(paths["model"]):
             try:
                 logger.info(
-                    f"[{stock_symbol}] Loading existing models for incremental training..."
+                    f"[{stock_symbol}] Loading existing models for warm-start..."
                 )
                 with open(paths["model"], "rb") as f:
-                    models = pickle.load(f)
-                logger.info(f"[{stock_symbol}] Successfully loaded existing models")
+                    existing_models = pickle.load(f)
+                
+                # Only use existing models that match the current config
+                # This ensures disabled models are not reused
+                for name in list(models.keys()):
+                    if name in existing_models:
+                        # Use existing model for warm-starting
+                        models[name] = existing_models[name]
+                        logger.info(f"[{stock_symbol}] Loaded existing {name} for warm-start")
+                    else:
+                        logger.info(f"[{stock_symbol}] Using fresh {name} (not in existing)")
+                        
             except Exception as e:
-                logger.warning(f"[{stock_symbol}] Could not load existing models: {e}")
-                models = None
-
-        # Build new models if loading failed
-        if models is None:
-            logger.info(f"[{stock_symbol}] Building new ensemble models...")
-            models = build_ensemble_model(models_config)
+                logger.warning(f"[{stock_symbol}] Could not load existing models: {e}, using fresh models")
 
         # Train each model
         logger.info(f"[{stock_symbol}] Training ensemble models...")

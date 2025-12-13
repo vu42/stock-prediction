@@ -26,6 +26,7 @@ sys.path.insert(0, backend_src)
 
 import pendulum
 from datetime import timedelta
+from uuid import uuid4
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 # ExternalTaskSensor removed - data is fetched on-demand from DB
@@ -34,14 +35,16 @@ from airflow.operators.python import PythonOperator
 from app.core.config import settings
 from app.core.logging import get_logger
 from app.db.session import SessionLocal
-from app.db.models import TrainingConfig, PipelineDAG
+from app.db.models import TrainingConfig, PipelineDAG, Stock, ExperimentTickerArtifact
 from app.schemas.training import TrainingConfigSchema
 from app.services.model_trainer import (
     train_prediction_model,
     evaluate_model,
     predict_future_prices,
+    get_stock_file_paths,
 )
 from app.services.email_service import send_email_notification
+from app.integrations.storage_s3 import storage_client, upload_model_artifact
 from sqlalchemy import select
 
 logger = get_logger(__name__)
@@ -211,6 +214,126 @@ def predict_stock_task(stock_symbol, **context):
         db.close()
 
 
+def ensure_bucket_task(**context):
+    """
+    Ensure MinIO/S3 bucket exists before uploading artifacts.
+    Creates the bucket if it doesn't exist.
+    """
+    try:
+        storage_client.ensure_bucket_exists()
+        logger.info(f"Bucket verified/created: {settings.s3_bucket_name}")
+        return {"status": "success", "bucket": settings.s3_bucket_name}
+    except Exception as e:
+        logger.error(f"Failed to ensure bucket exists: {e}")
+        # Don't fail the DAG, just log the error - uploads will fail individually
+        return {"status": "error", "error": str(e)}
+
+
+def upload_artifacts_task(stock_symbol, **context):
+    """
+    Upload model artifacts to MinIO/S3 for a single stock and store URLs in database.
+    
+    Uploads:
+    - evaluation_png: Model evaluation plot
+    - future_png: Future predictions plot  
+    - model_pkl: Trained model pickle
+    - scaler_pkl: Data scaler pickle
+    - future_predictions_csv: Future predictions data
+    
+    Then creates an ExperimentTickerArtifact record with the URLs so they
+    can be displayed in the Models page.
+    """
+    ti = context['ti']
+    stock_symbols = ti.xcom_pull(task_ids='load_training_config', key='stock_symbols') or []
+    if stock_symbols and stock_symbol not in stock_symbols:
+        logger.info(f"Skipping upload artifacts {stock_symbol} - not in training config")
+        return {"status": "skipped", "stock": stock_symbol}
+    
+    # Generate a unique run ID for this DAG run (use Airflow run_id)
+    dag_run_id = context.get('run_id', str(uuid4()))
+    
+    # Get file paths for this stock's artifacts
+    paths = get_stock_file_paths(stock_symbol)
+    
+    artifact_files = [
+        ("evaluation_png", paths["plot"], "image/png"),
+        ("future_png", paths["future_plot"], "image/png"),
+        ("model_pkl", paths["model"], "application/octet-stream"),
+        ("scaler_pkl", paths["scaler"], "application/octet-stream"),
+        ("future_predictions_csv", paths["future_csv"], "text/csv"),
+    ]
+    
+    uploaded_urls = {}
+    
+    for artifact_type, file_path, content_type in artifact_files:
+        if os.path.exists(file_path):
+            try:
+                url = upload_model_artifact(stock_symbol, dag_run_id, artifact_type, file_path)
+                uploaded_urls[artifact_type] = url
+                logger.info(f"[{stock_symbol}] Uploaded {artifact_type}: {url}")
+            except Exception as e:
+                logger.warning(f"[{stock_symbol}] Failed to upload {artifact_type}: {e}")
+        else:
+            logger.debug(f"[{stock_symbol}] Artifact not found: {file_path}")
+    
+    # Store artifact URLs in database (same as run_training_experiment)
+    # Use UPSERT logic: update existing record if it exists, otherwise create new
+    if uploaded_urls:
+        db = SessionLocal()
+        try:
+            # Get stock from DB
+            stock_stmt = select(Stock).where(Stock.ticker == stock_symbol)
+            stock = db.execute(stock_stmt).scalar_one_or_none()
+            
+            if stock:
+                # Check if artifact record already exists for this stock (with null run_id)
+                existing_stmt = (
+                    select(ExperimentTickerArtifact)
+                    .where(ExperimentTickerArtifact.stock_id == stock.id)
+                    .where(ExperimentTickerArtifact.run_id.is_(None))
+                )
+                existing_artifact = db.execute(existing_stmt).scalar_one_or_none()
+                
+                if existing_artifact:
+                    # Update existing record
+                    existing_artifact.metrics = {"status": "completed", "source": "airflow_dag"}
+                    existing_artifact.evaluation_png_url = uploaded_urls.get("evaluation_png")
+                    existing_artifact.future_png_url = uploaded_urls.get("future_png")
+                    existing_artifact.model_pkl_url = uploaded_urls.get("model_pkl")
+                    existing_artifact.scaler_pkl_url = uploaded_urls.get("scaler_pkl")
+                    existing_artifact.future_predictions_csv = uploaded_urls.get("future_predictions_csv")
+                    db.commit()
+                    logger.info(f"[{stock_symbol}] Updated existing artifact URLs in database")
+                else:
+                    # Create new record
+                    artifact = ExperimentTickerArtifact(
+                        stock_id=stock.id,
+                        metrics={"status": "completed", "source": "airflow_dag"},
+                        evaluation_png_url=uploaded_urls.get("evaluation_png"),
+                        future_png_url=uploaded_urls.get("future_png"),
+                        model_pkl_url=uploaded_urls.get("model_pkl"),
+                        scaler_pkl_url=uploaded_urls.get("scaler_pkl"),
+                        future_predictions_csv=uploaded_urls.get("future_predictions_csv"),
+                    )
+                    db.add(artifact)
+                    db.commit()
+                    logger.info(f"[{stock_symbol}] Created new artifact record in database")
+            else:
+                logger.warning(f"[{stock_symbol}] Stock not found in database, skipping artifact record")
+        except Exception as e:
+            logger.error(f"[{stock_symbol}] Failed to store artifact record: {e}")
+            db.rollback()
+        finally:
+            db.close()
+    
+    return {
+        "status": "success",
+        "stock": stock_symbol,
+        "artifacts": uploaded_urls,
+        "run_id": dag_run_id,
+    }
+
+
 def load_config_task(**context):
     """
     Load training config from DB and push to XCom for other tasks.
@@ -279,10 +402,16 @@ with DAG(
         python_callable=load_config_task,
     )
     
-    # Tasks: Train, Evaluate, Predict for each stock
+    # Task 2: Ensure MinIO/S3 bucket exists before uploading artifacts
+    ensure_bucket = PythonOperator(
+        task_id='ensure_bucket_exists',
+        python_callable=ensure_bucket_task,
+    )
+    
+    # Tasks: Train, Evaluate, Predict, Upload for each stock
     # Note: We use settings.vn30_stocks for task generation, but actual processing
     # uses config from DB (via XCom). Unused stock tasks will complete quickly.
-    all_predict_tasks = []
+    all_upload_tasks = []
     
     for stock in settings.vn30_stocks:
         # Train - now uses models_config from XCom
@@ -306,15 +435,24 @@ with DAG(
             op_kwargs={'stock_symbol': stock},
         )
         
-        # Chain: LoadConfig -> Train -> Evaluate -> Predict
+        # Upload artifacts to MinIO/S3
+        upload_task = PythonOperator(
+            task_id=f'upload_artifacts_{stock}',
+            python_callable=upload_artifacts_task,
+            op_kwargs={'stock_symbol': stock},
+        )
+        
+        # Chain: LoadConfig -> Train -> Evaluate -> Predict -> Upload
+        # ensure_bucket runs in parallel with load_config, but before uploads
         load_config >> train_task >> evaluate_task >> predict_task
-        all_predict_tasks.append(predict_task)
+        [predict_task, ensure_bucket] >> upload_task
+        all_upload_tasks.append(upload_task)
     
-    # Final task: Send email after all predictions complete
+    # Final task: Send email after all uploads complete
     send_email = PythonOperator(
         task_id='send_email_report',
         python_callable=send_email_task,
     )
     
-    # All predictions must complete before email
-    all_predict_tasks >> send_email
+    # All uploads must complete before email
+    all_upload_tasks >> send_email

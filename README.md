@@ -69,43 +69,39 @@ stock-prediction/
 cd backend
 docker-compose -f docker/docker-compose.dev.yml up -d
 
-# 2. Run database migrations
+# 2. Wait for services to be healthy, then run database migrations
 docker exec stock-prediction-api alembic upgrade head
 
-# 3. Create a test user (optional)
-docker exec stock-prediction-postgres psql -U postgres -d stock_prediction -c "
-INSERT INTO users (id, username, password_hash, display_name, role, email, is_active, created_at, updated_at)
-VALUES 
-    (gen_random_uuid(), 'admin', '\$2b\$12\$LQv3c1yqBwlVkxO/iNqH.OaGgMpJmR3u8KJgHM.qD7mP9eqVTpMGi', 'Admin User', 'data_scientist', 'admin@example.com', true, NOW(), NOW()),
-    (gen_random_uuid(), 'enduser1', '\$2b\$12\$ovIPTyXDwvQ10D5cA64ZBux.omXHLtMaBD4dJsAf6jEnLODRg8KPe', 'End User 1', 'end_user', 'enduser1@example.com', true, NOW(), NOW()),
-    (gen_random_uuid(), 'enduser2', '\$2b\$12\$ovIPTyXDwvQ10D5cA64ZBux.omXHLtMaBD4dJsAf6jEnLODRg8KPe', 'End User 2', 'end_user', 'enduser2@example.com', true, NOW(), NOW());
-"
-# Test user credentials: admin / admin123
-
-# 3.1. Saved Stocks
-docker exec stock-prediction-api alembic revision --autogenerate -m "add_user_saved_stocks_table" 
-
-docker exec stock-prediction-api alembic upgrade head
-
-# 4. Seed data
-docker restart stock-prediction-api
+# 3. Seed data (required for the app to function)
 docker exec stock-prediction-api python -m scripts.seed_users
 docker exec stock-prediction-api python -m scripts.seed_stocks
 docker exec stock-prediction-api python -m scripts.seed_stock_prices  # Load historical data from CSV files
 docker exec stock-prediction-api python -m scripts.seed_mock_predictions      # Mock predictions for demo
 docker exec stock-prediction-api python -m scripts.seed_mock_prediction_points # Mock prediction points for charts
 
-# 5. Train ML Models (will overwrite mock predictions with real ones)
-# Use app UI: Login with Data Scientist role → Pipelines → VN30 Model Training → Trigger Run
-# Training takes about 15 minutes to complete for all stocks
+# 4. Configure MinIO for public access (required for evaluation plots)
+# Install MinIO client first: brew install minio/stable/mc (macOS) or see https://min.io/docs/minio/linux/reference/minio-mc.html
+mc alias set local http://localhost:9000 minioadmin minioadmin
+mc anonymous set download local/stock-prediction-artifacts
+
+# 5. Train ML Models
+# Option A: Use Airflow UI
+#   - Open http://localhost:8080 (login: airflow_api / AirflowApi@2025!)
+#   - Navigate to DAGs → vn30_model_training → Trigger DAG
+#   - Training takes about 5-15 minutes per stock depending on configuration
+#
+# Option B: Use App UI (requires frontend)
+#   - Login with Data Scientist role → Training → Configure & Run
+#   - Or: Pipelines → VN30 Model Training → Trigger Run
 
 # 6. Access API documentation
 open http://localhost:8000/docs
-
-# 7. Configure MinIO for public access (required for evaluation plots)
-mc alias set local http://localhost:9000 minioadmin minioadmin
-mc anonymous set download local/stock-prediction-artifacts
 ```
+
+**Test User Credentials (seeded by scripts.seed_users):**
+- Data Scientist: `ds1` / `pass1234`
+- End User: `enduser1` / `pass1234`
+- Admin: `admin` / `pass1234`
 
 **Services Started:**
 
@@ -123,12 +119,24 @@ mc anonymous set download local/stock-prediction-artifacts
 ```bash
 # View logs
 docker logs stock-prediction-api -f
+docker logs stock-prediction-airflow -f
+docker logs stock-prediction-worker -f
 
-# Restart API after code changes
-docker restart stock-prediction-api
+# Restart services after code changes
+docker restart stock-prediction-api stock-prediction-airflow
+
+# Rebuild and restart (after docker-compose.yml changes)
+docker-compose -f docker/docker-compose.dev.yml up -d --build
 
 # Stop all services
 docker-compose -f docker/docker-compose.dev.yml down
+
+# Trigger training DAG manually
+docker exec stock-prediction-airflow airflow dags trigger vn30_model_training
+
+# Check DAG status
+docker exec stock-prediction-airflow airflow dags list
+docker exec stock-prediction-airflow airflow dags list-import-errors
 
 # Reset database (warning: deletes all data)
 docker exec stock-prediction-postgres psql -U postgres -d stock_prediction -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
@@ -200,13 +208,25 @@ Key settings in `backend/.env`:
 
 ### Airflow DAGs
 
-**Schedule:**
-- Data Crawler: 5:00 PM daily (Vietnam time)
-- Model Training: 6:00 PM daily (Vietnam time)
+**DAGs:**
+
+| DAG | Schedule | Description |
+|-----|----------|-------------|
+| `vn30_data_crawler` | 5:00 PM daily (VN time) | Fetches latest stock prices from VNDirect API |
+| `vn30_model_training` | 6:00 PM daily (VN time) | Trains models, evaluates, generates predictions, uploads artifacts to MinIO |
+
+**Model Training DAG Features:**
+- Loads training configuration from database (models enabled/disabled, hyperparameters)
+- Trains only configured stocks and models (respects config changes)
+- Automatically creates MinIO bucket if not exists
+- Uploads artifacts (model.pkl, scaler.pkl, evaluation.png, future.png, predictions.csv) to MinIO
+- Stores artifact URLs in database for API access
+- Sends email notification on completion (if configured)
 
 ## Model Output
 
-Trained models saved in `output/{STOCK_SYMBOL}/`:
+### Local Files
+Trained models saved locally in `output/{STOCK_SYMBOL}/`:
 
 ```
 output/VCB/
@@ -216,6 +236,20 @@ output/VCB/
 ├── VCB_future.png          # Prediction chart
 └── VCB_future_predictions.csv
 ```
+
+### MinIO/S3 Artifacts
+When training via Airflow DAG or Worker, artifacts are also uploaded to MinIO:
+
+```
+s3://stock-prediction-artifacts/artifacts/{run_id}/{STOCK}/
+├── evaluation_png.png      # Model evaluation plot
+├── future_png.png          # Future predictions plot
+├── model_pkl.pkl           # Trained model
+├── scaler_pkl.pkl          # Feature scaler
+└── future_predictions_csv.csv
+```
+
+The artifact URLs are stored in the `experiment_ticker_artifacts` table and returned via the `/api/v1/models` endpoint as `plotUrl`.
 
 ## Testing
 
@@ -240,9 +274,15 @@ pytest tests/
 - `stocks` - Stock master data
 - `stock_prices` - Daily OHLCV data
 - `stock_prediction_summaries` - Predicted % changes
+- `stock_prediction_points` - Individual prediction data points
+- `model_statuses` - Model training status and timestamps
+- `model_horizon_metrics` - MAPE metrics per horizon (7d, 15d, 30d)
 - `training_configs` - Saved training configurations
 - `experiment_runs` - Training run history
+- `experiment_logs` - Training run logs
+- `experiment_ticker_artifacts` - Artifact URLs per stock (MinIO links)
 - `pipeline_dags` - Airflow DAG metadata
+- `user_saved_stocks` - User's saved stock watchlist
 
 ### Migrations
 

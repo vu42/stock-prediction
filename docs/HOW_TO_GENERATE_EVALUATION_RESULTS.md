@@ -16,9 +16,8 @@ This guide will walk you through generating the evaluation results tables for yo
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Step 1: Start Docker Services                             │
-│  $ cd backend                                               │
-│  $ docker-compose -f docker/docker-compose.dev.yml up -d   │
+│  Step 1: Setup Application                                 │
+│  👉 Follow README.md Quick Start section                    │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
@@ -44,37 +43,13 @@ This guide will walk you through generating the evaluation results tables for yo
 
 ## Prerequisites
 
-Before running the evaluation results script, you need to have the application running. If you haven't set up the application yet, follow these steps:
+Before running the evaluation results script, you need to have the application running.
 
-### 1. Start the Application
+👉 **Follow the [Quick Start](../README.md#quick-start) section in the main README.md to set up the application.**
 
-Follow the **Quick Start** section in the [main README.md](../README.md). Here's a quick summary:
+### Verify Services are Running
 
-```bash
-# Navigate to backend directory
-cd backend
-
-# Start all services (API, Worker, PostgreSQL, Redis, MinIO, Airflow)
-docker-compose -f docker/docker-compose.dev.yml up -d
-
-# Run database migrations
-docker exec stock-prediction-api alembic upgrade head
-
-# Seed the database with data
-docker exec stock-prediction-api python -m scripts.seed_users
-docker exec stock-prediction-api python -m scripts.seed_stocks
-docker exec stock-prediction-api python -m scripts.seed_stock_prices
-docker exec stock-prediction-api python -m scripts.seed_mock_predictions
-docker exec stock-prediction-api python -m scripts.seed_mock_prediction_points
-
-# Configure MinIO for public access (required for evaluation plots)
-mc alias set local http://localhost:9000 minioadmin minioadmin
-mc anonymous set download local/stock-prediction-artifacts
-```
-
-### 2. Verify Services are Running
-
-Check that all Docker containers are running:
+After following the Quick Start guide, verify all Docker containers are running:
 
 ```bash
 docker ps --filter "name=stock-prediction"
@@ -86,6 +61,7 @@ You should see these containers with status "Up":
 - `stock-prediction-postgres`
 - `stock-prediction-redis`
 - `stock-prediction-minio`
+- `stock-prediction-airflow`
 
 ---
 
@@ -344,7 +320,7 @@ If you encounter any issues that are not covered in this guide, please contact:
 # Check if services are running
 docker ps --filter "name=stock-prediction"
 
-# Seed model metrics
+# Seed model metrics (mock data for testing)
 docker exec stock-prediction-api python -m scripts.seed_mock_model_metrics
 
 # Generate evaluation results
@@ -357,6 +333,17 @@ cat output/mape_metrics.csv
 
 # View API logs (if troubleshooting)
 docker logs stock-prediction-api -f
+docker logs stock-prediction-airflow -f
+
+# Trigger training DAG manually
+docker exec stock-prediction-airflow airflow dags trigger vn30_model_training
+
+# Check DAG status
+docker exec stock-prediction-airflow airflow dags list
+docker exec stock-prediction-airflow airflow dags list-import-errors
+
+# Restart services after code changes
+docker restart stock-prediction-api stock-prediction-airflow
 ```
 
 ### File Locations
@@ -373,7 +360,7 @@ docker logs stock-prediction-api -f
 
 ## Summary
 
-1. ✅ Start the application using Docker Compose
+1. ✅ Setup the application following [README.md Quick Start](../README.md#quick-start)
 2. ✅ Seed model metrics: `docker exec stock-prediction-api python -m scripts.seed_mock_model_metrics`
 3. ✅ Generate results: `docker exec stock-prediction-api python -m scripts.generate_evaluation_results`
 4. ✅ Access files in `output/` folder
