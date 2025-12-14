@@ -8,7 +8,7 @@ The system is deployed and publicly accessible at:
 
 | | URL |
 |---|---|
-| **Application** | http://13.215.172.15 |
+| **Application** | http://13.215.215.232 |
 
 **Demo Accounts:**
 - Data Scientist: `ds1` / `pass1234`
