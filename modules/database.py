@@ -182,6 +182,10 @@ def insert_stock_data(df, stock_symbol):
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # VNDirect API returns prices in thousands VND (e.g., 93.7 = 93,700 VND)
+    # Convert to VND by multiplying by 1000 for consistency with the system
+    PRICE_MULTIPLIER = 1000
+
     try:
         # Prepare records for batch insert
         records = []
@@ -190,10 +194,10 @@ def insert_stock_data(df, stock_symbol):
                 (
                     stock_symbol,
                     pd.to_datetime(row.get("date") or row.get("Date")).date(),
-                    float(row.get("open") or row.get("Open", 0)),
-                    float(row.get("high") or row.get("High", 0)),
-                    float(row.get("low") or row.get("Low", 0)),
-                    float(row.get("close") or row.get("Close", 0)),
+                    float(row.get("open") or row.get("Open", 0)) * PRICE_MULTIPLIER,
+                    float(row.get("high") or row.get("High", 0)) * PRICE_MULTIPLIER,
+                    float(row.get("low") or row.get("Low", 0)) * PRICE_MULTIPLIER,
+                    float(row.get("close") or row.get("Close", 0)) * PRICE_MULTIPLIER,
                     int(row.get("volume") or row.get("Volume", 0)),
                 )
             )

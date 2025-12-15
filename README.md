@@ -3,19 +3,16 @@
 Machine learning system for predicting Vietnam's VN30 stock prices using ensemble models, FastAPI REST API, and Apache Airflow orchestration.
 
 ## Live Demo
+| **Application** | http://13.215.215.232 |
 
-The system is deployed and publicly accessible at:
+The app is deployed on a t3 large EC2 instance (2 vCPU, 8 GiB RAM). Due to the resource constraints, it will take around 40 mins to train the models.
 
-| | URL |
-|---|---|
-| **Application** | http://13.215.172.15 |
-
-**Demo Accounts:**
+**Demo accounts:**
 - Data Scientist: `ds1` / `pass1234`
 - End User: `enduser1` / `pass1234`
 - Admin: `admin` / `pass1234`
 
-> **Note:** The server will be kept live until January 16, 2026
+> **Note:**  The server will be kept live until January 16, 2026
 
 ## Overview
 
@@ -82,13 +79,14 @@ docker exec stock-prediction-api python -m scripts.seed_mock_prediction_points #
 # 4. Configure MinIO for public access (required for evaluation plots)
 # Install MinIO client first: brew install minio/stable/mc (macOS) or see https://min.io/docs/minio/linux/reference/minio-mc.html
 mc alias set local http://localhost:9000 minioadmin minioadmin
+mc mb local/stock-prediction-artifacts
 mc anonymous set download local/stock-prediction-artifacts
 
 # 5. Train ML Models
 # Option A: Use Airflow UI
 #   - Open http://localhost:8080 (login: airflow_api / AirflowApi@2025!)
 #   - Navigate to DAGs → vn30_model_training → Trigger DAG
-#   - Training takes about 5-15 minutes per stock depending on configuration
+#   - Training takes about 5-40 minutes per stock depending on configuration
 #
 # Option B: Use App UI (requires frontend)
 #   - Login with Data Scientist role → Training → Configure & Run
