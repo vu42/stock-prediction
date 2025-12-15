@@ -83,7 +83,7 @@ mc anonymous set download local/stock-prediction-artifacts
 # Option A: Use Airflow UI
 #   - Open http://localhost:8080 (login: airflow_api / AirflowApi@2025!)
 #   - Navigate to DAGs → vn30_model_training → Trigger DAG
-#   - Training takes about 5-15 minutes per stock depending on configuration
+#   - Training takes about 5-40 minutes per stock depending on configuration
 #
 # Option B: Use App UI (requires frontend)
 #   - Login with Data Scientist role → Training → Configure & Run
