@@ -63,7 +63,7 @@ services:
       - S3_ENDPOINT_URL=http://minio:9000
       - S3_ACCESS_KEY_ID=minioadmin
       - S3_SECRET_ACCESS_KEY=minioadmin
-      - S3_PUBLIC_URL=http://localhost:9000
+      - S3_PUBLIC_URL=${S3_PUBLIC_URL:-http://localhost:9000}
       - AIRFLOW_BASE_URL=http://stock-prediction-airflow:8080
       # Must match the AIRFLOW_API_USER/PASSWORD in airflow-webserver service
       - AIRFLOW_USERNAME=airflow_api
@@ -96,7 +96,7 @@ services:
       - S3_ENDPOINT_URL=http://minio:9000
       - S3_ACCESS_KEY_ID=minioadmin
       - S3_SECRET_ACCESS_KEY=minioadmin
-      - S3_PUBLIC_URL=http://localhost:9000
+      - S3_PUBLIC_URL=${S3_PUBLIC_URL:-http://localhost:9000}
     volumes:
       - ../src:/app/src
       - ../../output:/app/output
@@ -127,7 +127,7 @@ services:
       - S3_ENDPOINT_URL=http://minio:9000
       - S3_ACCESS_KEY_ID=minioadmin
       - S3_SECRET_ACCESS_KEY=minioadmin
-      - S3_PUBLIC_URL=http://localhost:9000
+      - S3_PUBLIC_URL=${S3_PUBLIC_URL:-http://localhost:9000}
       - _PIP_ADDITIONAL_REQUIREMENTS=pydantic-settings httpx boto3 scikit-learn sendgrid bcrypt python-jose passlib matplotlib fastapi sqlalchemy psycopg2-binary rq
     ports:
       - "8080:8080"
