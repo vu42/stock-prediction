@@ -112,6 +112,10 @@ def insert_stock_data(
     # Get or create stock record
     stock = get_or_create_stock(db, stock_symbol)
     
+    # VNDirect API returns prices in thousands VND (e.g., 93.7 = 93,700 VND)
+    # Convert to VND by multiplying by 1000 for consistency with the system
+    PRICE_MULTIPLIER = 1000
+    
     # Prepare records for batch insert
     records = []
     for _, row in df.iterrows():
@@ -119,10 +123,10 @@ def insert_stock_data(
         records.append({
             "stock_id": stock.id,
             "price_date": date_val,
-            "open_price": float(row.get("open") or row.get("Open", 0)),
-            "high_price": float(row.get("high") or row.get("High", 0)),
-            "low_price": float(row.get("low") or row.get("Low", 0)),
-            "close_price": float(row.get("close") or row.get("Close", 0)),
+            "open_price": float(row.get("open") or row.get("Open", 0)) * PRICE_MULTIPLIER,
+            "high_price": float(row.get("high") or row.get("High", 0)) * PRICE_MULTIPLIER,
+            "low_price": float(row.get("low") or row.get("Low", 0)) * PRICE_MULTIPLIER,
+            "close_price": float(row.get("close") or row.get("Close", 0)) * PRICE_MULTIPLIER,
             "volume": int(row.get("volume") or row.get("Volume", 0)),
         })
     
